@@ -1,0 +1,236 @@
+.admin-container {
+  display: flex;
+  height: 100vh;     
+  overflow: hidden;    
+  background: #f5f7ff;
+}
+
+/* ================= Sidebar ================= */
+.sidebar {
+  width: 240px;
+  height: 100vh;           
+  position: sticky;       
+  top: 0;
+
+  background: linear-gradient(180deg, #4f46e5, #4338ca);
+  color: white;
+  padding: 22px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  overflow: hidden;     
+}
+
+.logo {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* Admin profile */
+.admin-profile {
+  text-align: center;
+  margin: 20px 0 30px;
+  overflow: hidden; 
+}
+
+.admin-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+
+  object-fit: cover;      
+  display: block;
+  margin: 0 auto;
+}
+
+.admin-name {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+/* Menu */
+.menu {
+  list-style: none;
+  padding: 0;
+}
+
+.menu li {
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.menu li.active,
+.menu li:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ================= Logout (FIXED) ================= */
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+.logout-btn svg {
+  flex-shrink: 0;
+}
+
+/* ================= Main ================= */
+.main-content {
+  flex: 1;
+  height: 100vh;         
+  overflow-y: auto;        
+  padding: 30px;
+}
+
+
+.page-title {
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #312e81;
+}
+
+/* Toggle */
+.menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: #4f46e5;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+/* ================= Cards ================= */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  background: white;
+  padding: 18px;
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.card h3 {
+  font-size: 15px;
+  margin: 8px 0;
+}
+
+.card p {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Card icons + colours */
+.card-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.card-icon.blue { background: #e0e7ff; color: #4f46e5; }
+.card-icon.violet { background: #ede9fe; color: #6d28d9; }
+.card-icon.green { background: #dcfce7; color: #16a34a; }
+.card-icon.yellow { background: #fef9c3; color: #ca8a04; }
+.card-icon.red { background: #fee2e2; color: #dc2626; }
+.card-icon.orange { background: #ffedd5; color: #ea580c; }
+
+/* ================= Charts ================= */
+.charts-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+/* Chart box (general) */
+.chart-box {
+  background: white;
+  padding: 16px;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  height: 320px;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-box h3 {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* ===== Donut FIX ===== */
+.chart-box.donut-box {
+  align-items: center;
+}
+
+.donut-wrapper {
+  flex: 1;
+  width: 100%;
+  max-width: 280px;
+  margin: auto;
+}
+
+.chart-box canvas {
+  max-height: 240px !important;
+}
+
+/* ================= Mobile ================= */
+@media (max-width: 768px) {
+
+  .menu-toggle {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;         
+    left: -260px;
+
+    width: 260px;
+    height: auto;     
+
+    transition: left 0.3s ease;
+  }
+
+  .sidebar.show {
+    left: 0;
+  }
+
+  .main-content {
+    padding: 20px;
+  }
+}

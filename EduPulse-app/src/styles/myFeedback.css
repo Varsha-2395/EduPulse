@@ -1,0 +1,82 @@
+/* ===== Layout ===== */
+.myfb-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #eef2ff, #f5f3ff);
+  display: flex;
+  justify-content: center;
+  padding: 28px 20px;
+}
+
+.myfb-card {
+  width: 100%;
+  max-width: 640px;
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 18px;
+  box-shadow: 0 18px 40px rgba(79, 70, 229, 0.15);
+}
+
+/* ===== Header ===== */
+.myfb-header {
+  margin-bottom: 26px;
+}
+
+.myfb-header h2 {
+  margin-bottom: 6px;
+  color: #312e81;
+}
+
+.myfb-header p {
+  font-size: 14px;
+  color: #6d28d9;
+  font-weight: 500;
+}
+
+/* ===== Feedback item ===== */
+.feedback-item {
+  border-left: 5px solid #6366f1;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 18px;
+  background: #f8fafc;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feedback-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.feedback-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.date {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* ===== Feedback text ===== */
+.feedback-text {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+}
+
+/* ===== Empty state ===== */
+.empty-text {
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 30px;
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 480px) {
+  .myfb-card {
+    padding: 24px;
+  }
+}

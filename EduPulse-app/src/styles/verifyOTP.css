@@ -1,0 +1,127 @@
+/* ===== Layout ===== */
+.otp-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #eef2ff, #f5f3ff);
+  padding: 20px;
+}
+
+.otp-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  padding: 32px 28px;
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(79, 70, 229, 0.15);
+}
+
+/* ===== Header ===== */
+.otp-header {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.otp-logo {
+  width: 160px;
+  margin-bottom: 8px;
+}
+
+.tagline {
+  font-size: 14px;
+  color: #6d28d9;
+  font-weight: 500;
+}
+
+/* ===== Form ===== */
+.otp-form label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: #312e81;
+  font-weight: 500;
+}
+
+/* ===== Input ===== */
+.otp-container .input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.otp-container .input-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  color: #7c7cf0;
+}
+
+.otp-container .input-wrapper input {
+  width: 100%;
+  padding: 12px 42px;
+  border-radius: 10px;
+  border: 1px solid #c7d2fe;
+  font-size: 14px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.otp-container .input-wrapper input:not(:placeholder-shown) {
+  letter-spacing: 4px;
+}
+
+.otp-container .input-wrapper input:focus {
+  outline: none;
+  border-color: #6366f1;
+  background: #ffffff;
+}
+
+.otp-container .input-wrapper:focus-within .input-icon {
+  color: #4f46e5;
+}
+
+/* ===== Button ===== */
+.verify-btn {
+  width: 100%;
+  margin-top: 22px;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.verify-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(79, 70, 229, 0.35);
+}
+
+/* ===== Resend ===== */
+.resend {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.resend span {
+  color: #4f46e5;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 480px) {
+  .otp-card {
+    padding: 24px 20px;
+  }
+
+  .otp-logo {
+    width: 140px;
+  }
+}
