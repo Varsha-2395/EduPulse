@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Lock, Eye, EyeOff } from "lucide-react";
+import { Lock, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import "../styles/setPassword.css";
 
 const SetPassword = () => {
@@ -12,6 +12,7 @@ const SetPassword = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -22,8 +23,12 @@ const SetPassword = () => {
     }
 
     setError("");
-    // dummy submit – backend later
-    navigate("/login");
+    setShowSuccessPopup(true);
+
+    // dummy submit - backend later
+    setTimeout(() => {
+      navigate("/login");
+    }, 1800);
   };
 
   return (
@@ -56,7 +61,10 @@ const SetPassword = () => {
               type={showPassword ? "text" : "password"}
               placeholder="Enter new password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError("");
+              }}
               pattern="^(?=.*[A-Z])(?=.*[0-9])(?=.*[@$!%*?&]).{8,}$"
               title="Password must be at least 8 characters, include one uppercase letter, one number and one special character"
               required
@@ -76,7 +84,10 @@ const SetPassword = () => {
               type={showConfirm ? "text" : "password"}
               placeholder="Confirm new password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (error) setError("");
+              }}
               required
             />
             <span
@@ -91,6 +102,16 @@ const SetPassword = () => {
             Set Password
           </button>
         </form>
+
+        {showSuccessPopup && (
+          <div className="success-popup-backdrop">
+            <div className="success-popup">
+              <CheckCircle2 size={42} />
+              <h3>Password Set Successfully</h3>
+              <p>Redirecting to login page...</p>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
