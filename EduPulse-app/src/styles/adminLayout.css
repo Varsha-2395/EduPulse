@@ -1,0 +1,124 @@
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f5f7ff;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  background: linear-gradient(180deg, #4f46e5, #4338ca);
+  color: white;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Logo */
+.logo {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* Profile */
+.admin-profile {
+  text-align: center;
+  margin: 20px 0 30px;
+}
+
+.admin-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 3px solid white;
+}
+
+.admin-name {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+/* Menu */
+.menu {
+  list-style: none;
+  padding: 0;
+}
+
+.menu li {
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+/* 🔥 ACTIVE highlight */
+.menu li.active {
+  background: rgba(255, 255, 255, 0.25);
+  font-weight: 600;
+}
+
+/* Hover */
+.menu li:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Logout */
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  background: rgba(255, 255, 255, 0.18);
+  border: none;
+  color: white;
+
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* Main */
+.main-content {
+  flex: 1;
+  padding: 30px;
+}
+
+/* Toggle */
+.menu-toggle {
+  display: none;
+  background: white;
+  border: none;
+  padding: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .menu-toggle {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    top: 0;
+    height: 100vh;
+    transition: 0.3s;
+    z-index: 1000;
+  }
+
+  .sidebar.show {
+    left: 0;
+  }
+
+  .main-content {
+    padding: 20px;
+  }
+}
