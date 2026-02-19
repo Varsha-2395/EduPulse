@@ -1,93 +1,46 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import AdminLayout from "../components/AdminLayout";
-import { Bar, Doughnut } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  ArcElement,
-  Tooltip,
-  Legend,
-} from "chart.js";
 import "../styles/reports.css";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  ArcElement,
-  Tooltip,
-  Legend
-);
-
 const Reports = () => {
-  const [department, setDepartment] = useState("All");
-  const [year, setYear] = useState("All");
+  const reportsData = [
+    { id: 1, student: "Arun Kumar", department: "CSE", year: "1st Year", rating: "Positive", date: "2025-02-10" },
+    { id: 2, student: "Divya", department: "IT", year: "2nd Year", rating: "Neutral", date: "2025-02-11" },
+    { id: 3, student: "Rahul", department: "ECE", year: "3rd Year", rating: "Negative", date: "2025-02-12" },
+    { id: 4, student: "Sneha", department: "EEE", year: "4th Year", rating: "Positive", date: "2025-02-13" },
+    { id: 5, student: "Karthik", department: "IT", year: "1st Year", rating: "Positive", date: "2025-02-13" },
+    { id: 6, student: "Meena", department: "CSE", year: "2nd Year", rating: "Neutral", date: "2025-02-14" },
+    { id: 7, student: "Vignesh", department: "EEE", year: "3rd Year", rating: "Negative", date: "2025-02-15" },
+  ];
 
-  /* Dummy aggregated data 😌 */
-  const feedbackStats = {
-    total: 410,
-    positive: 260,
-    neutral: 90,
-    negative: 60,
-  };
+  const [departmentFilter, setDepartmentFilter] = useState("All");
+  const [yearFilter, setYearFilter] = useState("All");
 
-  const departmentChartData = {
-    labels: ["CSE", "IT", "ECE", "EEE"],
-    datasets: [
-      {
-        label: "Feedback",
-        data: [120, 100, 110, 80],
-        backgroundColor: "#4f46e5",
-        borderRadius: 8,
-      },
-    ],
-  };
+  const filteredReports = useMemo(() => {
+    return reportsData.filter((item) => {
+      const matchesDepartment =
+        departmentFilter === "All" || item.department === departmentFilter;
 
-  const ratingChartData = {
-    labels: ["Positive", "Neutral", "Negative"],
-    datasets: [
-      {
-        data: [260, 90, 60],
-        backgroundColor: ["#16a34a", "#facc15", "#dc2626"],
-        borderWidth: 0,
-      },
-    ],
-  };
+      const matchesYear =
+        yearFilter === "All" || item.year === yearFilter;
 
-  /* Export handlers 😎🔥 */
-  const handleExportPDF = () => {
-    window.print(); // simple & effective 😌
-  };
-
-  const handleExportCSV = () => {
-    const csvContent = `
-Category,Count
-Positive,${feedbackStats.positive}
-Neutral,${feedbackStats.neutral}
-Negative,${feedbackStats.negative}
-`;
-
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "report.csv";
-    a.click();
-  };
+      return matchesDepartment && matchesYear;
+    });
+  }, [departmentFilter, yearFilter]);
 
   return (
     <AdminLayout>
       <div className="reports-container">
-        <h1 className="page-title">Reports</h1>
+        <div className="reports-header">
+          <h1>Reports</h1>
+          <p>Generate & Export System Reports</p>
+        </div>
 
         {/* Filters */}
         <div className="reports-filters">
           <select
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
           >
             <option value="All">All Departments</option>
             <option value="CSE">CSE</option>
@@ -97,8 +50,8 @@ Negative,${feedbackStats.negative}
           </select>
 
           <select
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
+            value={yearFilter}
+            onChange={(e) => setYearFilter(e.target.value)}
           >
             <option value="All">All Years</option>
             <option value="1st Year">1st Year</option>
@@ -108,64 +61,52 @@ Negative,${feedbackStats.negative}
           </select>
         </div>
 
-        {/* Insight Cards */}
-        <div className="reports-cards">
-          <div className="report-card">
-            <span>Total Feedback</span>
-            <h2>{feedbackStats.total}</h2>
-          </div>
+        {/* Report Preview */}
+        <div className="report-preview">
+          <h3>Report Preview</h3>
 
-          <div className="report-card positive">
-            <span>Positive</span>
-            <h2>{feedbackStats.positive}</h2>
-          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Student</th>
+                <th>Department</th>
+                <th>Year</th>
+                <th>Rating</th>
+              </tr>
+            </thead>
 
-          <div className="report-card neutral">
-            <span>Neutral</span>
-            <h2>{feedbackStats.neutral}</h2>
-          </div>
-
-          <div className="report-card negative">
-            <span>Negative</span>
-            <h2>{feedbackStats.negative}</h2>
-          </div>
+            <tbody>
+              {filteredReports.length > 0 ? (
+                filteredReports.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.date}</td>
+                    <td>{item.student}</td>
+                    <td>{item.department}</td>
+                    <td>{item.year}</td>
+                    <td>
+                      <span className={`rating ${item.rating.toLowerCase()}`}>
+                        {item.rating}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="5" className="no-data">
+                    No data found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {/* Charts */}
-        <div className="reports-charts">
-          <div className="chart-box">
-            <h3>Department Wise Feedback</h3>
-            <Bar
-              data={departmentChartData}
-              options={{ responsive: true }}
-            />
-          </div>
-
-          <div className="chart-box">
-            <h3>Rating Distribution</h3>
-            <Doughnut
-              data={ratingChartData}
-              options={{
-                cutout: "70%",
-                plugins: { legend: { position: "bottom" } },
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Export Buttons 🔥 */}
+        {/* Export Buttons */}
         <div className="reports-actions">
-          <button onClick={handleExportPDF}>
-            Export PDF
-          </button>
-
-          <button onClick={handleExportCSV}>
-            Export CSV
-          </button>
-
-          <button onClick={() => window.print()}>
-            Print Report
-          </button>
+          <button className="primary-btn">Export PDF</button>
+          <button className="secondary-btn">Export CSV</button>
+          <button className="ghost-btn">Print Report</button>
         </div>
       </div>
     </AdminLayout>
