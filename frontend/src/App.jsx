@@ -10,6 +10,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import Students from "./pages/Students";
 import Feedbacks from "./pages/Feedbacks";
+import Reports from "./pages/Reports";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
       <Route path="/students" element={<Students />} />
       <Route path="/feedbacks" element={<Feedbacks />} />
+      <Route path="/reports" element={<Reports />} />
     </Routes>
   );
 }
