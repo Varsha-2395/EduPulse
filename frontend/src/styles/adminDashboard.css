@@ -1,15 +1,18 @@
+/* ================= Layout ================= */
+
 .admin-container {
   display: flex;
-  height: 100vh;     
-  overflow: hidden;    
+  height: 100vh;
+  overflow: hidden;
   background: #f5f7ff;
 }
 
 /* ================= Sidebar ================= */
+
 .sidebar {
   width: 240px;
-  height: 100vh;           
-  position: sticky;       
+  height: 100vh;
+  position: sticky;
   top: 0;
 
   background: linear-gradient(180deg, #4f46e5, #4338ca);
@@ -20,7 +23,7 @@
   flex-direction: column;
   justify-content: space-between;
 
-  overflow: hidden;     
+  overflow: hidden;
 }
 
 .logo {
@@ -30,10 +33,10 @@
 }
 
 /* Admin profile */
+
 .admin-profile {
   text-align: center;
   margin: 20px 0 30px;
-  overflow: hidden; 
 }
 
 .admin-avatar {
@@ -42,7 +45,7 @@
   border-radius: 50%;
   border: 3px solid #fff;
 
-  object-fit: cover;      
+  object-fit: cover;
   display: block;
   margin: 0 auto;
 }
@@ -53,6 +56,7 @@
 }
 
 /* Menu */
+
 .menu {
   list-style: none;
   padding: 0;
@@ -63,6 +67,7 @@
   margin-bottom: 10px;
   border-radius: 8px;
   cursor: pointer;
+  transition: 0.2s ease;
 }
 
 .menu li.active,
@@ -70,7 +75,8 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* ================= Logout (FIXED) ================= */
+/* ================= Logout ================= */
+
 .logout-btn {
   display: flex;
   align-items: center;
@@ -87,6 +93,11 @@
   font-weight: 500;
 
   cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .logout-btn svg {
@@ -94,13 +105,13 @@
 }
 
 /* ================= Main ================= */
+
 .main-content {
   flex: 1;
-  height: 100vh;         
-  overflow-y: auto;        
+  height: 100vh;
+  overflow-y: auto;
   padding: 30px;
 }
-
 
 .page-title {
   font-size: 24px;
@@ -108,17 +119,8 @@
   color: #312e81;
 }
 
-/* Toggle */
-.menu-toggle {
-  display: none;
-  background: none;
-  border: none;
-  color: #4f46e5;
-  cursor: pointer;
-  margin-bottom: 10px;
-}
-
 /* ================= Cards ================= */
+
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -132,6 +134,11 @@
   border-radius: 14px;
   text-align: center;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  transition: 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
 }
 
 .card h3 {
@@ -144,7 +151,8 @@
   font-weight: 700;
 }
 
-/* Card icons + colours */
+/* Card icons */
+
 .card-icon {
   width: 44px;
   height: 44px;
@@ -167,71 +175,75 @@
 .card-icon.red { background: #fee2e2; color: #dc2626; }
 .card-icon.orange { background: #ffedd5; color: #ea580c; }
 
-/* ================= Charts ================= */
-.charts-grid {
-  margin-top: 24px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 20px;
+/* ================= Highlights ================= */
+
+.highlights-section {
+  margin-top: 26px;
 }
 
-/* Chart box (general) */
-.chart-box {
-  background: white;
-  padding: 16px;
-  border-radius: 14px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-  height: 320px;
-
-  display: flex;
-  flex-direction: column;
-}
-
-.chart-box h3 {
+.highlights-section h3 {
+  margin-bottom: 14px;
+  color: #312e81;
   font-weight: 600;
-  margin-bottom: 10px;
 }
 
-/* ===== Donut FIX ===== */
-.chart-box.donut-box {
-  align-items: center;
+.highlight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
 }
 
-.donut-wrapper {
-  flex: 1;
-  width: 100%;
-  max-width: 280px;
-  margin: auto;
+.highlight-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  transition: 0.2s ease;
 }
 
-.chart-box canvas {
-  max-height: 240px !important;
+.highlight-card:hover {
+  transform: translateY(-2px);
+}
+
+.highlight-class {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6366f1;
+  margin-bottom: 6px;
+}
+
+.highlight-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.highlight-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.highlight-card.negative {
+  border-left: 4px solid #dc2626;
+}
+
+.highlight-card.positive {
+  border-left: 4px solid #16a34a;
+}
+
+.highlight-card.neutral {
+  border-left: 4px solid #facc15;
 }
 
 /* ================= Mobile ================= */
+
 @media (max-width: 768px) {
-
-  .menu-toggle {
-    display: block;
-  }
-
-  .sidebar {
-    position: fixed;
-    top: 0;
-    bottom: 0;         
-    left: -260px;
-
-    width: 260px;
-    height: auto;     
-
-    transition: left 0.3s ease;
-  }
-
-  .sidebar.show {
-    left: 0;
-  }
 
   .main-content {
     padding: 20px;
+  }
+
+  .card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
 }

@@ -7,51 +7,43 @@ import {
   Minus,
   AlertCircle,
 } from "lucide-react";
-import { Doughnut, Bar } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-} from "chart.js";
 
 import AdminLayout from "../components/AdminLayout";
 import "../styles/adminDashboard.css";
 
-ChartJS.register(
-  ArcElement,
-  Tooltip,
-  Legend,
-  CategoryScale,
-  LinearScale,
-  BarElement
-);
-
 const AdminDashboard = () => {
-  const feedbackData = {
-    labels: ["Positive", "Neutral", "Negative"],
-    datasets: [
-      {
-        data: [260, 90, 60],
-        backgroundColor: ["#22c55e", "#facc15", "#ef4444"],
-        borderWidth: 0,
-      },
-    ],
-  };
 
-  const departmentData = {
-    labels: ["CSE", "IT", "ECE", "EEE"],
-    datasets: [
-      {
-        data: [220, 180, 140, 100],
-        backgroundColor: "#4f46e5",
-        borderRadius: 10,
-      },
-    ],
-  };
+  /* ✅ Class-wise Highlights Data */
+  const highlightsData = [
+    {
+      id: 1,
+      class: "1st Year - CSE",
+      type: "negative",
+      title: "Frequent Complaint",
+      text: "Teaching pace is too fast",
+    },
+    {
+      id: 2,
+      class: "2nd Year - IT",
+      type: "neutral",
+      title: "Common Feedback",
+      text: "Need more practical examples",
+    },
+    {
+      id: 3,
+      class: "3rd Year - ECE",
+      type: "positive",
+      title: "Frequent Praise",
+      text: "Very good lab sessions",
+    },
+    {
+      id: 4,
+      class: "4th Year - EEE",
+      type: "positive",
+      title: "Frequent Praise",
+      text: "Faculty explanation clarity",
+    },
+  ];
 
   return (
     <AdminLayout>
@@ -67,43 +59,21 @@ const AdminDashboard = () => {
         <Card icon={<AlertCircle />} title="Not Submitted" value="110" color="orange" />
       </div>
 
-      {/* Charts */}
-      <div className="charts-grid">
-        <div className="chart-box donut-box">
-          <h3>Feedback Distribution</h3>
+      {/* ✅ Highlights Section */}
+      <div className="highlights-section">
+        <h3>Class-wise Feedback Highlights</h3>
 
-          <div className="donut-wrapper">
-            <Doughnut
-              data={feedbackData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: "72%",
-                plugins: {
-                  legend: {
-                    position: "bottom",
-                    labels: { boxWidth: 12 },
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="chart-box">
-          <h3>Department Wise Submission</h3>
-
-          <Bar
-            data={departmentData}
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { display: false } },
-              scales: {
-                y: { beginAtZero: true },
-              },
-            }}
-          />
+        <div className="highlight-grid">
+          {highlightsData.map((item) => (
+            <div
+              key={item.id}
+              className={`highlight-card ${item.type}`}
+            >
+              <p className="highlight-class">{item.class}</p>
+              <p className="highlight-title">{item.title}</p>
+              <p className="highlight-text">{item.text}</p>
+            </div>
+          ))}
         </div>
       </div>
     </AdminLayout>
