@@ -7,8 +7,9 @@ const AdminLayout = ({ children }) => {
   const [showSidebar, setShowSidebar] = useState(false);
   const sidebarRef = useRef(null);
   const navigate = useNavigate();
-  const location = useLocation(); // 🔥 Active highlight magic
+  const location = useLocation();
 
+  /* Click outside close */
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -24,6 +25,16 @@ const AdminLayout = ({ children }) => {
     return () =>
       document.removeEventListener("mousedown", handleClickOutside);
   }, [showSidebar]);
+
+  /* ✅ LOGOUT FUNCTION */
+  const handleLogout = () => {
+    // If using auth storage
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    // Redirect
+    navigate("/login");
+  };
 
   const menuItems = [
     { name: "Dashboard", path: "/admin-dashboard" },
@@ -66,7 +77,8 @@ const AdminLayout = ({ children }) => {
           </ul>
         </div>
 
-        <button className="logout-btn">
+        {/* ✅ FIXED LOGOUT */}
+        <button className="logout-btn" onClick={handleLogout}>
           <LogOut size={18} />
           <span>Logout</span>
         </button>
