@@ -29,43 +29,49 @@
   font-size: 14px;
 }
 
-/* Preview */
-.report-preview {
-  background: white;
+.reports-visuals {
+  margin: 16px 0 20px;
+}
+
+.report-visual-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.report-chart-card {
+  background: #ffffff;
   border-radius: 16px;
-  padding: 20px;
+  padding: 16px 20px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
 }
 
-.report-preview h3 {
-  margin-top: 0;
+.report-chart-card h3 {
+  margin: 0 0 10px;
   color: #4338ca;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
+.report-chart-wrap {
+  height: 280px;
 }
 
-thead {
-  background: #eef2ff;
+.export-controls {
+  margin-top: 8px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
-th {
-  padding: 12px;
-  text-align: left;
-  font-size: 14px;
-  color: #4338ca;
+.export-controls h3 {
+  margin: 0;
+  color: #312e81;
 }
 
-td {
-  padding: 12px;
-  border-top: 1px solid #f3f4f6;
-  font-size: 14px;
-}
-
-tr:hover {
-  background: #f9fafb;
+.export-count {
+  margin: 0;
+  font-size: 13px;
+  color: #4b5563;
 }
 
 /* Ratings */
@@ -96,7 +102,6 @@ tr:hover {
   margin-top: 20px;
   display: flex;
   gap: 12px;
-  flex-wrap: wrap;
 }
 
 .primary-btn {
@@ -117,15 +122,50 @@ tr:hover {
   cursor: pointer;
 }
 
-.ghost-btn {
-  background: transparent;
-  border: 1px solid #e5e7eb;
-  padding: 10px 18px;
-  border-radius: 10px;
-  cursor: pointer;
+.primary-btn:disabled,
+.secondary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .no-data {
   text-align: center;
   color: gray;
+}
+
+@media (max-width: 768px) {
+  .reports-container {
+    padding: 20px 8px;
+  }
+
+  .reports-filters {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .reports-filters select {
+    width: 100%;
+  }
+
+  .report-chart-card {
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .report-chart-wrap {
+    height: 240px;
+  }
+
+  .report-visual-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-actions {
+    flex-direction: column;
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    width: 100%;
+  }
 }

@@ -26,6 +26,10 @@ const AdminLayout = ({ children }) => {
       document.removeEventListener("mousedown", handleClickOutside);
   }, [showSidebar]);
 
+  useEffect(() => {
+    setShowSidebar(false);
+  }, [location.pathname]);
+
   /* ✅ LOGOUT FUNCTION */
   const handleLogout = () => {
     // If using auth storage
@@ -48,21 +52,21 @@ const AdminLayout = ({ children }) => {
       {/* Sidebar */}
       <aside
         ref={sidebarRef}
-        className={`sidebar ${showSidebar ? "show" : ""}`}
+        className={`admin-sidebar ${showSidebar ? "show" : ""}`}
       >
         <div>
-          <h2 className="logo">EduPulse</h2>
+          <h2 className="admin-logo">EduPulse</h2>
 
-          <div className="admin-profile">
+          <div className="admin-layout-profile">
             <img
               src="/student-avatar.png"
               alt="Admin"
-              className="admin-avatar"
+              className="admin-layout-avatar"
             />
-            <p className="admin-name">Admin</p>
+            <p className="admin-layout-name">Admin</p>
           </div>
 
-          <ul className="menu">
+          <ul className="admin-menu">
             {menuItems.map((item) => (
               <li
                 key={item.path}
@@ -78,16 +82,28 @@ const AdminLayout = ({ children }) => {
         </div>
 
         {/* ✅ FIXED LOGOUT */}
-        <button className="logout-btn" onClick={handleLogout}>
+        <button type="button" className="admin-logout-btn" onClick={handleLogout}>
           <LogOut size={18} />
           <span>Logout</span>
         </button>
       </aside>
 
-      {/* Main */}
-      <main className="main-content">
+      {showSidebar && (
         <button
-          className="menu-toggle"
+          type="button"
+          className="admin-sidebar-backdrop"
+          aria-label="Close sidebar"
+          onClick={() => setShowSidebar(false)}
+        />
+      )}
+
+      {/* Main */}
+      <main className="admin-main-content">
+        <button
+          type="button"
+          className="admin-menu-toggle"
+          aria-label="Toggle sidebar"
+          aria-expanded={showSidebar}
           onClick={() => setShowSidebar(!showSidebar)}
         >
           <Menu size={22} />

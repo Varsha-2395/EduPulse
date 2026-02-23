@@ -2,51 +2,54 @@
   display: flex;
   min-height: 100vh;
   background: #f5f7ff;
+  position: relative;
 }
 
 /* Sidebar */
-.sidebar {
-  width: 240px;
+.admin-sidebar {
+  width: 260px;
+  box-sizing: border-box;
   background: linear-gradient(180deg, #4f46e5, #4338ca);
   color: white;
   padding: 22px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  z-index: 1200;
 }
 
 /* Logo */
-.logo {
+.admin-logo {
   text-align: center;
   font-size: 22px;
   font-weight: 700;
 }
 
 /* Profile */
-.admin-profile {
+.admin-layout-profile {
   text-align: center;
   margin: 20px 0 30px;
 }
 
-.admin-avatar {
+.admin-layout-avatar {
   width: 70px;
   height: 70px;
   border-radius: 50%;
   border: 3px solid white;
 }
 
-.admin-name {
+.admin-layout-name {
   margin-top: 8px;
   font-size: 14px;
 }
 
 /* Menu */
-.menu {
+.admin-menu {
   list-style: none;
   padding: 0;
 }
 
-.menu li {
+.admin-menu li {
   padding: 12px;
   margin-bottom: 10px;
   border-radius: 10px;
@@ -54,19 +57,17 @@
   transition: 0.2s;
 }
 
-/* 🔥 ACTIVE highlight */
-.menu li.active {
+.admin-menu li.active {
   background: rgba(255, 255, 255, 0.25);
   font-weight: 600;
 }
 
-/* Hover */
-.menu li:hover {
+.admin-menu li:hover {
   background: rgba(255, 255, 255, 0.18);
 }
 
 /* Logout */
-.logout-btn {
+.admin-logout-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -83,13 +84,13 @@
 }
 
 /* Main */
-.main-content {
+.admin-main-content {
   flex: 1;
   padding: 30px;
 }
 
 /* Toggle */
-.menu-toggle {
+.admin-menu-toggle {
   display: none;
   background: white;
   border: none;
@@ -99,26 +100,42 @@
   margin-bottom: 10px;
 }
 
+.admin-sidebar-backdrop {
+  display: none;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
-  .menu-toggle {
-    display: block;
+  .admin-menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .sidebar {
+  .admin-sidebar {
     position: fixed;
-    left: -260px;
-    top: 0;
-    height: 100vh;
-    transition: 0.3s;
-    z-index: 1000;
-  }
-
-  .sidebar.show {
     left: 0;
+    top: 0;
+    bottom: 0;
+    max-width: 82vw;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
   }
 
-  .main-content {
-    padding: 20px;
+  .admin-sidebar.show {
+    transform: translateX(0);
+  }
+
+  .admin-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    border: none;
+    background: rgba(15, 23, 42, 0.35);
+    z-index: 1100;
+  }
+
+  .admin-main-content {
+    padding: 20px 16px;
   }
 }
