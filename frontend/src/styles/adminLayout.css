@@ -8,6 +8,7 @@
 /* Sidebar */
 .admin-sidebar {
   width: 260px;
+  height: 100vh;
   box-sizing: border-box;
   background: linear-gradient(180deg, #4f46e5, #4338ca);
   color: white;
@@ -15,6 +16,8 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  position: sticky;
+  top: 0;
   z-index: 1200;
 }
 
@@ -86,6 +89,8 @@
 /* Main */
 .admin-main-content {
   flex: 1;
+  height: 100vh;
+  overflow-y: auto;
   padding: 30px;
 }
 
@@ -136,6 +141,8 @@
   }
 
   .admin-main-content {
+    height: auto;
+    overflow-y: visible;
     padding: 20px 16px;
   }
 }

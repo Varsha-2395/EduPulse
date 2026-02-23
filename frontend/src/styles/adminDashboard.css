@@ -60,6 +60,34 @@
 .card-icon.red { background: #fee2e2; color: #dc2626; }
 .card-icon.orange { background: #ffedd5; color: #ea580c; }
 
+/* ================= Trend ================= */
+
+.trend-section {
+  margin-top: 26px;
+}
+
+.trend-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+}
+
+.trend-card h3 {
+  margin: 0;
+  color: #312e81;
+}
+
+.trend-card p {
+  margin: 6px 0 14px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.trend-chart-wrap {
+  height: 280px;
+}
+
 /* ================= Highlights ================= */
 
 .highlights-section {
@@ -125,5 +153,9 @@
 @media (max-width: 768px) {
   .card-grid {
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .trend-chart-wrap {
+    height: 230px;
   }
 }

@@ -37,8 +37,9 @@ const studentSeed = [
 const ratingCycle = ["Positive", "Neutral", "Negative"];
 
 const dateByOffset = (offset) => {
-  const day = String((offset % 27) + 1).padStart(2, "0");
-  return `2026-02-${day}`;
+  const start = new Date("2025-11-01");
+  start.setDate(start.getDate() + offset * 3);
+  return start.toISOString().slice(0, 10);
 };
 
 const studentsData = studentSeed.map((student, index) => {
@@ -140,11 +141,32 @@ const highlightsData = Object.entries(byClass)
     };
   });
 
+const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const monthlyTrendData = Object.entries(
+  feedbackEntries.reduce((acc, entry) => {
+    const date = new Date(entry.date);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {})
+)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([key, count]) => {
+    const [year, month] = key.split("-");
+    const monthIdx = Number(month) - 1;
+    return {
+      label: `${monthNames[monthIdx]} ${String(year).slice(-2)}`,
+      count,
+    };
+  });
+
 export {
   dashboardMetrics,
   departmentOptions,
   feedbackEntries,
   highlightsData,
+  monthlyTrendData,
   studentsData,
   yearOptions,
 };

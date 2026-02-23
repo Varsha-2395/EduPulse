@@ -1,17 +1,20 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import AdminLayout from "../components/AdminLayout";
 import { departmentOptions, studentsData, yearOptions } from "../data/feedbackData";
 import "../styles/students.css";
 
 const Students = () => {
+  const [students, setStudents] = useState(studentsData);
   const [search, setSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("All");
   const [yearFilter, setYearFilter] = useState("All");
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [csvMessage, setCsvMessage] = useState("");
+  const fileInputRef = useRef(null);
   const studentsPerPage = 10;
 
-  const filteredStudents = studentsData.filter((student) => {
+  const filteredStudents = students.filter((student) => {
     const matchesSearch = student.name.toLowerCase().includes(search.toLowerCase());
     const matchesDepartment =
       departmentFilter === "All" || student.department === departmentFilter;
@@ -26,6 +29,147 @@ const Students = () => {
     (safeCurrentPage - 1) * studentsPerPage,
     safeCurrentPage * studentsPerPage
   );
+
+  const parseCSVLine = (line) => {
+    const result = [];
+    let value = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i += 1) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          value += '"';
+          i += 1;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === "," && !inQuotes) {
+        result.push(value.trim());
+        value = "";
+      } else {
+        value += char;
+      }
+    }
+
+    result.push(value.trim());
+    return result;
+  };
+
+  const handleExportCSV = () => {
+    if (!filteredStudents.length) return;
+
+    const headers = "Name,Year,Department,Email,Phone,Feedback\n";
+    const escapeCSV = (value) => `"${String(value).replace(/"/g, '""')}"`;
+    const rows = filteredStudents
+      .map((student) =>
+        [
+          student.name,
+          student.year,
+          student.department,
+          student.email,
+          student.phone,
+          student.feedbackHistory?.[0]?.comment || "",
+        ]
+          .map(escapeCSV)
+          .join(",")
+      )
+      .join("\n");
+
+    const blob = new Blob([headers + rows], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "students-export.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportCSV = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const rows = text
+      .split(/\r?\n/)
+      .map((row) => row.trim())
+      .filter(Boolean);
+
+    if (rows.length < 2) {
+      setCsvMessage("CSV is empty or missing data rows.");
+      event.target.value = "";
+      return;
+    }
+
+    const header = parseCSVLine(rows[0]).map((col) => col.toLowerCase());
+    const getIdx = (name) => header.indexOf(name);
+
+    const nameIdx = getIdx("name");
+    const yearIdx = getIdx("year");
+    const deptIdx = getIdx("department");
+    const emailIdx = getIdx("email");
+    const phoneIdx = getIdx("phone");
+    const feedbackIdx = header.includes("feedback")
+      ? getIdx("feedback")
+      : getIdx("comment");
+
+    if ([nameIdx, yearIdx, deptIdx, emailIdx, phoneIdx].some((idx) => idx === -1)) {
+      setCsvMessage("Required columns: name, year, department, email, phone.");
+      event.target.value = "";
+      return;
+    }
+
+    const baseId = students.length ? Math.max(...students.map((s) => Number(s.id) || 0)) : 0;
+    let importedCount = 0;
+    let skippedCount = 0;
+
+    const importedStudents = rows.slice(1).reduce((acc, row, index) => {
+      const cols = parseCSVLine(row);
+      const name = cols[nameIdx];
+      const year = cols[yearIdx];
+      const department = cols[deptIdx];
+      const email = cols[emailIdx];
+      const phone = cols[phoneIdx];
+      const feedback = feedbackIdx >= 0 ? cols[feedbackIdx] : "";
+
+      if (!name || !year || !department || !email || !phone) {
+        skippedCount += 1;
+        return acc;
+      }
+
+      importedCount += 1;
+      acc.push({
+        id: baseId + index + 1,
+        name,
+        year,
+        department,
+        email,
+        phone,
+        feedbackHistory: [
+          {
+            submittedOn: new Date().toISOString().slice(0, 10),
+            rating: "Neutral",
+            comment: feedback || "Imported via CSV",
+          },
+        ],
+      });
+
+      return acc;
+    }, []);
+
+    if (importedStudents.length) {
+      setStudents((prev) => [...prev, ...importedStudents]);
+      setCurrentPage(1);
+    }
+
+    setCsvMessage(
+      `Imported ${importedCount} student(s)${skippedCount ? `, skipped ${skippedCount} row(s).` : "."}`
+    );
+    event.target.value = "";
+  };
 
   return (
     <AdminLayout>
@@ -78,6 +222,33 @@ const Students = () => {
             ))}
           </select>
         </div>
+
+        <div className="students-actions">
+          <button
+            type="button"
+            className="students-action-btn"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Import CSV
+          </button>
+          <button
+            type="button"
+            className="students-action-btn secondary"
+            onClick={handleExportCSV}
+            disabled={!filteredStudents.length}
+          >
+            Export CSV
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleImportCSV}
+            hidden
+          />
+        </div>
+
+        {csvMessage ? <p className="students-import-note">{csvMessage}</p> : null}
 
         <div className="students-table">
           <table>

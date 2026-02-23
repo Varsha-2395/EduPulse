@@ -1,4 +1,14 @@
 import React from "react";
+import { Line } from "react-chartjs-2";
+import {
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LineElement,
+  LinearScale,
+  PointElement,
+  Tooltip,
+} from "chart.js";
 import {
   Users,
   MessageSquare,
@@ -9,10 +19,55 @@ import {
 } from "lucide-react";
 
 import AdminLayout from "../components/AdminLayout";
-import { dashboardMetrics, highlightsData } from "../data/feedbackData";
+import { dashboardMetrics, highlightsData, monthlyTrendData } from "../data/feedbackData";
 import "../styles/adminDashboard.css";
 
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend
+);
+
 const AdminDashboard = () => {
+  const trendData = {
+    labels: monthlyTrendData.map((item) => item.label),
+    datasets: [
+      {
+        label: "Feedback Submissions",
+        data: monthlyTrendData.map((item) => item.count),
+        borderColor: "#4f46e5",
+        backgroundColor: "rgba(79, 70, 229, 0.14)",
+        borderWidth: 3,
+        pointRadius: 4,
+        pointHoverRadius: 5,
+        tension: 0.35,
+        fill: true,
+      },
+    ],
+  };
+
+  const trendOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          precision: 0,
+          stepSize: 5,
+        },
+      },
+    },
+  };
+
   return (
     <AdminLayout>
       <h1 className="page-title">Admin Dashboard</h1>
@@ -24,6 +79,16 @@ const AdminDashboard = () => {
         <Card icon={<Minus />} title="Neutral" value={dashboardMetrics.neutral} color="yellow" />
         <Card icon={<ThumbsDown />} title="Negative" value={dashboardMetrics.negative} color="red" />
         <Card icon={<AlertCircle />} title="Not Submitted" value={dashboardMetrics.notSubmitted} color="orange" />
+      </div>
+
+      <div className="trend-section">
+        <div className="trend-card">
+          <h3>Monthly Feedback Trend</h3>
+          <p>Track how many submissions were received month by month.</p>
+          <div className="trend-chart-wrap">
+            <Line data={trendData} options={trendOptions} />
+          </div>
+        </div>
       </div>
 
       <div className="highlights-section">

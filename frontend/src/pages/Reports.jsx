@@ -10,6 +10,8 @@ import {
   LinearScale,
   Tooltip,
 } from "chart.js";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { departmentOptions, feedbackEntries, yearOptions } from "../data/feedbackData";
 import "../styles/reports.css";
 
@@ -25,6 +27,9 @@ ChartJS.register(
 const Reports = () => {
   const [departmentFilter, setDepartmentFilter] = useState("All");
   const [yearFilter, setYearFilter] = useState("All");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [ratingFilter, setRatingFilter] = useState("All");
 
   const [exportDepartment, setExportDepartment] = useState("All");
   const [exportYear, setExportYear] = useState("All");
@@ -34,12 +39,21 @@ const Reports = () => {
       const matchDept =
         departmentFilter === "All" || fb.department === departmentFilter;
       const matchYear = yearFilter === "All" || fb.year === yearFilter;
-      return matchDept && matchYear;
+      const matchFrom = !fromDate || new Date(fb.date) >= new Date(fromDate);
+      const matchTo = !toDate || new Date(fb.date) <= new Date(toDate);
+      return matchDept && matchYear && matchFrom && matchTo;
     });
-  }, [departmentFilter, yearFilter]);
+  }, [departmentFilter, yearFilter, fromDate, toDate]);
+
+  const chartFeedbacks = useMemo(() => {
+    return filteredFeedbacks.filter((fb) => {
+      if (ratingFilter === "All") return true;
+      return fb.rating === ratingFilter;
+    });
+  }, [filteredFeedbacks, ratingFilter]);
 
   const ratingBreakdown = useMemo(() => {
-    return filteredFeedbacks.reduce(
+    return chartFeedbacks.reduce(
       (acc, fb) => {
         const rating = fb.rating.toLowerCase();
         if (rating === "positive") acc.positive += 1;
@@ -49,14 +63,14 @@ const Reports = () => {
       },
       { positive: 0, neutral: 0, negative: 0 }
     );
-  }, [filteredFeedbacks]);
+  }, [chartFeedbacks]);
 
   const departmentBreakdown = useMemo(() => {
-    return filteredFeedbacks.reduce((acc, fb) => {
+    return chartFeedbacks.reduce((acc, fb) => {
       acc[fb.department] = (acc[fb.department] || 0) + 1;
       return acc;
     }, {});
-  }, [filteredFeedbacks]);
+  }, [chartFeedbacks]);
 
   const pieData = {
     labels: ["Positive", "Neutral", "Negative"],
@@ -124,72 +138,45 @@ const Reports = () => {
     });
   }, [exportDepartment, exportYear]);
 
-  const escapeHtml = (value) =>
-    String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/\"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-
   const handleExportPDF = () => {
     if (!exportFeedbacks.length) return;
 
-    const reportRows = exportFeedbacks
-      .map(
-        (fb) => `
-          <tr>
-            <td>${escapeHtml(fb.date)}</td>
-            <td>${escapeHtml(fb.student)}</td>
-            <td>${escapeHtml(fb.department)}</td>
-            <td>${escapeHtml(fb.year)}</td>
-            <td>${escapeHtml(fb.rating)}</td>
-            <td>${escapeHtml(fb.comment)}</td>
-          </tr>
-        `
-      )
-      .join("");
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const title = "EduPulse Feedback Report";
+    const filterText = `Department: ${exportDepartment} | Year: ${exportYear}`;
+    const countText = `Total Submissions: ${exportFeedbacks.length}`;
 
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+    doc.setFontSize(16);
+    doc.text(title, 40, 40);
+    doc.setFontSize(11);
+    doc.text(filterText, 40, 62);
+    doc.text(countText, 40, 78);
 
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Feedback Report</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 24px; color: #111827; }
-            h1 { margin: 0 0 8px; }
-            p { margin: 0 0 12px; color: #4b5563; }
-            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-            th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; font-size: 12px; }
-            th { background: #eef2ff; color: #312e81; }
-          </style>
-        </head>
-        <body>
-          <h1>EduPulse Feedback Report</h1>
-          <p>Department: ${escapeHtml(exportDepartment)} | Year: ${escapeHtml(exportYear)}</p>
-          <p>Total Submissions: ${exportFeedbacks.length}</p>
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Student</th>
-                <th>Department</th>
-                <th>Year</th>
-                <th>Rating</th>
-                <th>Comment</th>
-              </tr>
-            </thead>
-            <tbody>${reportRows}</tbody>
-          </table>
-        </body>
-      </html>
-    `);
+    autoTable(doc, {
+      startY: 92,
+      head: [["Date", "Student", "Department", "Year", "Rating", "Comment"]],
+      body: exportFeedbacks.map((fb) => [
+        fb.date,
+        fb.student,
+        fb.department,
+        fb.year,
+        fb.rating,
+        fb.comment,
+      ]),
+      styles: {
+        fontSize: 9,
+        cellPadding: 6,
+      },
+      headStyles: {
+        fillColor: [79, 70, 229],
+      },
+      columnStyles: {
+        5: { cellWidth: 260 },
+      },
+      margin: { left: 40, right: 40 },
+    });
 
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    doc.save(`feedback-report-${exportDepartment}-${exportYear}.pdf`);
   };
 
   const handleExportExcel = () => {
@@ -226,26 +213,53 @@ const Reports = () => {
           <p>Class-wise Feedback Reports</p>
         </div>
 
-        <div className="reports-filters">
-          <select
-            value={departmentFilter}
-            onChange={(e) => setDepartmentFilter(e.target.value)}
-          >
-            {departmentOptions.map((option) => (
-              <option key={option} value={option}>
-                {option === "All" ? "All Departments" : option}
-              </option>
-            ))}
-          </select>
+        <div className="reports-toolbar">
+          <div className="reports-filters">
+            <select
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value)}
+            >
+              {departmentOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option === "All" ? "All Departments" : option}
+                </option>
+              ))}
+            </select>
 
-          <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}>
-            {yearOptions.map((option) => (
-              <option key={option} value={option}>
-                {option === "All" ? "All Years" : option}
-              </option>
-            ))}
-          </select>
+            <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}>
+              {yearOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option === "All" ? "All Years" : option}
+                </option>
+              ))}
+            </select>
+
+            <select value={ratingFilter} onChange={(e) => setRatingFilter(e.target.value)}>
+              {["All", "Positive", "Neutral", "Negative"].map((option) => (
+                <option key={option} value={option}>
+                  {option === "All" ? "All Ratings" : option}
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              aria-label="From date"
+            />
+
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              aria-label="To date"
+            />
+          </div>
         </div>
+        <span className="rating-filter-count">
+          Filtered for charts: {chartFeedbacks.length}
+        </span>
 
         <div className="reports-visuals">
           <div className="report-visual-grid">
@@ -274,7 +288,7 @@ const Reports = () => {
         </div>
 
         <div className="export-controls">
-          <h3>Download Filters</h3>
+          <h3>Download Reports</h3>
           <div className="reports-filters">
             <select
               value={exportDepartment}
@@ -296,24 +310,24 @@ const Reports = () => {
             </select>
           </div>
           <p className="export-count">Selected Records: {exportFeedbacks.length}</p>
-        </div>
 
-        <div className="reports-actions">
-          <button
-            className="primary-btn"
-            onClick={handleExportPDF}
-            disabled={!exportFeedbacks.length}
-          >
-            Download PDF
-          </button>
+          <div className="reports-actions">
+            <button
+              className="primary-btn"
+              onClick={handleExportPDF}
+              disabled={!exportFeedbacks.length}
+            >
+              Download PDF
+            </button>
 
-          <button
-            className="secondary-btn"
-            onClick={handleExportExcel}
-            disabled={!exportFeedbacks.length}
-          >
-            Download Excel
-          </button>
+            <button
+              className="secondary-btn"
+              onClick={handleExportExcel}
+              disabled={!exportFeedbacks.length}
+            >
+              Download Excel
+            </button>
+          </div>
         </div>
       </div>
     </AdminLayout>
