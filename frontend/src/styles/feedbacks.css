@@ -32,7 +32,7 @@
 
 .fbp-filter-bar {
   display: grid;
-  grid-template-columns: repeat(4, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 12px;
   padding: 14px;
   margin-bottom: 14px;
@@ -97,6 +97,30 @@
   font-size: 15px;
   line-height: 1.55;
   color: #334155;
+}
+
+.fbp-detected {
+  margin: 0 0 8px;
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fbp-detected.positive {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.fbp-detected.neutral {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.fbp-detected.negative {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .fbp-empty {
