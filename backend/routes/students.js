@@ -14,10 +14,35 @@ router.post("/", async (req, res) => {
 });
 
 /* ✅ Get Students */
-router.get("/", async (req, res) => {
+router.post("/", async (req, res) => {
   try {
-    const students = await Student.find();
-    res.json(students);
+    const student = new Student(req.body);
+    await student.save();
+
+    res.status(201).json(student); // ✅ proper status
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete("/:id", async (req, res) => {
+  try {
+    await Student.findByIdAndDelete(req.params.id);
+    res.json({ message: "Student Deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/:id", async (req, res) => {
+  try {
+    const updatedStudent = await Student.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    res.json(updatedStudent);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
