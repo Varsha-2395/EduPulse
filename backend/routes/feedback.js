@@ -1,20 +1,33 @@
 const express = require("express");
 const router = express.Router();
+const Feedback = require("../models/Feedback");
 const verifyToken = require("../middleware/auth");
 
-const {
-  submitFeedback,
-  getStudentFeedback,
-  getAllFeedback,
-} = require("../controllers/feedbackController");
+router.post("/", verifyToken, async (req, res) => {
+  try {
+    const feedback = new Feedback(req.body);
+    await feedback.save();
 
-/* ✅ Submit Feedback */
-router.post("/", verifyToken, submitFeedback);
+    console.log("Feedback saved 😌🔥");
 
-/* ✅ Student Feedback History */
-router.get("/student/:regNo", verifyToken, getStudentFeedback);
+    res.status(201).json({
+      message: "Feedback stored successfully",
+    });
 
-/* ✅ Admin View */
-router.get("/", verifyToken, getAllFeedback);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.get("/:regNo", verifyToken, async (req, res) => {
+  try {
+    const feedbacks = await Feedback.find({ regNo: req.params.regNo });
+
+    res.json(feedbacks);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 module.exports = router;

@@ -48,7 +48,7 @@ const MyFeedback = () => {
           <div key={item._id} className="feedback-item">
             <div className="feedback-top">
               <span className="date">
-                {new Date(item.createdAt).toLocaleDateString()} 😌
+                {new Date(item.createdAt).toLocaleString()}
               </span>
             </div>
 
