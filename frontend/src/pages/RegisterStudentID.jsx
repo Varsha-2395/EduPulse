@@ -24,14 +24,13 @@ const RegisterStudentID = () => {
         },
         body: JSON.stringify({
           regNo,
-          email: "varshavs2005@gmail.com", // temp
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data?.message || "Failed to send OTP. Try again.");
+        setError(data?.message || data?.error || "Failed to send OTP. Try again.");
         return;
       }
 

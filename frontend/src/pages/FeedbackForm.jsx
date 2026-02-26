@@ -4,11 +4,47 @@ import "../styles/feedbackForm.css";
 
 const FeedbackForm = () => {
   const [feedback, setFeedback] = useState("");
+  
+  const student = JSON.parse(localStorage.getItem("student"));
+  const token = localStorage.getItem("token");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // backend later
-    setFeedback("");
+
+    if (!student || !token) {
+      alert("Session expired 😏");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:5000/api/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, 
+        },
+        body: JSON.stringify({
+          regNo: student.regNo, 
+          comments: feedback,
+          subject: "General",
+          faculty: "Faculty",
+          rating: 5,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("Feedback submitted 😌🔥");
+        setFeedback("");
+      } else {
+        alert(data.message || "Error");
+      }
+
+    } catch (error) {
+      console.log(error);
+      alert("Server error");
+    }
   };
 
   return (
