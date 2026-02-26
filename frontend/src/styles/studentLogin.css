@@ -109,6 +109,7 @@
   font-size: 13px;
   color: #4f46e5;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .register-link {

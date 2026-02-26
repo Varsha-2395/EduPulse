@@ -6,12 +6,12 @@ import "../styles/studentDashboard.css";
 const StudentDashboard = () => {
   const navigate = useNavigate();
 
-  const student = {
-    name: "Varsha V S",
-    department: "B.E. Computer Science and Engineering",
-    year: "Final Year",
-    registerNo: "962822104081",
-  };
+  const student = JSON.parse(localStorage.getItem("student"));
+
+  if (!student) {
+    navigate("/login"); // safety check 😏
+    return null;
+  }
 
   return (
     <div className="dash-container">
@@ -25,7 +25,10 @@ const StudentDashboard = () => {
 
         <button
           className="logout-btn-top"
-          onClick={() => navigate("/login")}
+          onClick={() => {
+            localStorage.removeItem("student");
+            navigate("/login");
+          }}
         >
           <LogOut size={18} />
           <span>Logout</span>
@@ -47,7 +50,7 @@ const StudentDashboard = () => {
             <p className="dept">{student.department}</p>
             <p className="year">{student.year}</p>
             <span className="reg-no">
-              Reg No: {student.registerNo}
+              Reg No: {student.regNo}
             </span>
           </div>
         </div>

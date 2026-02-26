@@ -1,35 +1,64 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GraduationCap } from "lucide-react";
 import "../styles/registerStudentID.css";
 
 const RegisterStudentID = () => {
   const navigate = useNavigate();
+  const [regNo, setRegNo] = useState("");
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
-  const handleSendOTP = (e) => {
+  const handleSendOTP = async (e) => {
     e.preventDefault();
-    // dummy flow – backend later
-    navigate("/verify-otp");
+    setError("");
+    setSuccessMessage("");
+    setIsSending(true);
+
+    try {
+      const res = await fetch("http://localhost:5000/api/students/send-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          regNo,
+          email: "varshavs2005@gmail.com", // temp
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data?.message || "Failed to send OTP. Try again.");
+        return;
+      }
+
+      setSuccessMessage("OTP sent successfully");
+
+      setTimeout(() => {
+        navigate("/verify-otp", { state: { otp: data.otp, regNo } });
+      }, 1200);
+    } catch {
+      setError("Server error. Try again.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
     <div className="register-container">
       <div className="register-card">
 
-        {/* Logo */}
         <div className="register-header">
-          <img
-            src="/EduPulse.png"
-            alt="EduPulse Logo"
-            className="register-logo"
-          />
-          <p className="tagline">
-            Enter your Register Number to continue
-          </p>
+          <img src="/EduPulse.png" alt="EduPulse Logo" className="register-logo" />
+          <p className="tagline">Enter your Register Number to continue</p>
         </div>
 
-        {/* Form */}
         <form className="register-form" onSubmit={handleSendOTP}>
+          {error && <div className="register-alert register-alert-error">{error}</div>}
+
           <label>Student ID / Register Number</label>
 
           <div className="input-wrapper">
@@ -39,22 +68,28 @@ const RegisterStudentID = () => {
               placeholder="Enter your register number"
               maxLength={12}
               pattern="[0-9]{12}"
-              title="Register number must be exactly 12 digits"
               required
+              value={regNo}
+              onChange={(e) => setRegNo(e.target.value)}
             />
           </div>
 
-          <button type="submit" className="register-btn">
-            Send OTP
+          <button type="submit" className="register-btn" disabled={isSending}>
+            {isSending ? "Sending..." : "Send OTP"}
           </button>
         </form>
 
-        {/* Back to login */}
         <div className="login-link">
           Already have an account? <Link to="/login">Login</Link>
         </div>
 
       </div>
+
+      {successMessage && (
+        <div className="success-popup-overlay">
+          <div className="success-popup">{successMessage}</div>
+        </div>
+      )}
     </div>
   );
 };

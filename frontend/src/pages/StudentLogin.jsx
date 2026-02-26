@@ -7,7 +7,7 @@ const StudentLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const [registerNo, setRegisterNo] = useState("");
+  const [regNo, setRegNo] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
@@ -31,10 +31,10 @@ const StudentLogin = () => {
     return "";
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!registerNo || !password) {
+    if (!regNo || !password) {
       setError("Please enter register number and password");
       return;
     }
@@ -45,9 +45,33 @@ const StudentLogin = () => {
       return;
     }
 
-    setError("");
-    // dummy success – backend later
-    navigate("/student-dashboard");
+    try {
+      const res = await fetch("http://localhost:5000/api/students/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          regNo,
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem("student", JSON.stringify(data.student));
+        localStorage.setItem("token", data.token);
+
+        navigate("/student-dashboard");
+      } else {
+        setError(data.message);
+      }
+
+    } catch (error) {
+      console.log(error);
+      setError("Server error. Try again.");
+    }
   };
 
   return (
@@ -78,8 +102,8 @@ const StudentLogin = () => {
               placeholder="Enter your register number"
               maxLength={12}
               pattern="[0-9]{12}"
-              value={registerNo}
-              onChange={(e) => setRegisterNo(e.target.value)}
+              value={regNo}
+              onChange={(e) => setRegNo(e.target.value)}
               required
             />
           </div>
@@ -111,7 +135,7 @@ const StudentLogin = () => {
           </button>
 
           <div className="form-links">
-            <span className="forgot">Forgot Password?</span>
+            <Link to="/register" className="forgot">Forgot Password?</Link>
           </div>
 
           <div className="register-link">

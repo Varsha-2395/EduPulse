@@ -43,6 +43,19 @@
   font-weight: 500;
 }
 
+.register-alert {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.register-alert-error {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
 /* ===== Input with icon ===== */
 .register-container .input-wrapper {
   position: relative;
@@ -96,6 +109,13 @@
   box-shadow: 0 8px 18px rgba(79, 70, 229, 0.35);
 }
 
+.register-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* ===== Login link ===== */
 .login-link {
   text-align: center;
@@ -108,6 +128,26 @@
   color: #6d28d9;
   font-weight: 600;
   text-decoration: none;
+}
+
+.success-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.success-popup {
+  background: #ecfdf5;
+  color: #166534;
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-weight: 600;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
 }
 
 /* ===== Mobile ===== */

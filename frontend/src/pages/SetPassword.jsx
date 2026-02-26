@@ -1,10 +1,12 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Lock, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import "../styles/setPassword.css";
 
 const SetPassword = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { regNo } = location.state || {};
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -14,7 +16,7 @@ const SetPassword = () => {
   const [error, setError] = useState("");
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
@@ -22,13 +24,41 @@ const SetPassword = () => {
       return;
     }
 
-    setError("");
-    setShowSuccessPopup(true);
+    if (!regNo) {
+      setError("Session expired. Please register again.");
+      return;
+    }
 
-    // dummy submit - backend later
-    setTimeout(() => {
-      navigate("/login");
-    }, 1800);
+    try {
+      const res = await fetch("http://localhost:5000/api/students/set-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          regNo,
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setError("");
+        setShowSuccessPopup(true);
+
+        setTimeout(() => {
+          navigate("/login");
+        }, 1800);
+
+      } else {
+        setError(data.message || "Something went wrong");
+      }
+
+    } catch (error) {
+      console.log(error);
+      setError("Server error");
+    }
   };
 
   return (

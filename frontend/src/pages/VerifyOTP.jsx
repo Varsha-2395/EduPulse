@@ -1,35 +1,50 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
 import "../styles/verifyOTP.css";
 
 const VerifyOTP = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const { otp, regNo } = location.state || {};
+
+  const [enteredOTP, setEnteredOTP] = useState("");
+  const [error, setError] = useState("");
 
   const handleVerify = (e) => {
     e.preventDefault();
-    // dummy verification – backend later
-    navigate("/set-password");
+
+    if (!otp) {
+      setError("OTP expired. Please resend.");
+      return;
+    }
+
+    if (enteredOTP !== otp) {
+      setError("Invalid OTP ❌");
+      return;
+    }
+
+    console.log("OTP Verified 😌🔥");
+
+    navigate("/set-password", { state: { regNo } });
   };
 
   return (
     <div className="otp-container">
       <div className="otp-card">
 
-        {/* Header */}
         <div className="otp-header">
-          <img
-            src="/EduPulse.png"
-            alt="EduPulse Logo"
-            className="otp-logo"
-          />
+          <img src="/EduPulse.png" alt="EduPulse Logo" className="otp-logo" />
           <p className="tagline">
             Enter the OTP sent to your registered email
           </p>
         </div>
 
-        {/* OTP Form */}
         <form className="otp-form" onSubmit={handleVerify}>
+
+          {error && <div className="error-box">{error}</div>}
+
           <label>One Time Password (OTP)</label>
 
           <div className="input-wrapper">
@@ -39,8 +54,12 @@ const VerifyOTP = () => {
               placeholder="Enter 6-digit OTP"
               maxLength={6}
               pattern="[0-9]{6}"
-              title="OTP must be 6 digits"
               required
+              value={enteredOTP}
+              onChange={(e) => {
+                setEnteredOTP(e.target.value);
+                if (error) setError("");
+              }}
             />
           </div>
 
@@ -49,7 +68,6 @@ const VerifyOTP = () => {
           </button>
         </form>
 
-        {/* Resend */}
         <div className="resend">
           Didn’t receive OTP? <span>Resend</span>
         </div>
