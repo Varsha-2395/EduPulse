@@ -13,7 +13,7 @@ const MyFeedback = () => {
     const fetchFeedback = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/feedback/student/${student.regNo}`,
+          `http://localhost:5000/api/feedback/${student.regNo}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

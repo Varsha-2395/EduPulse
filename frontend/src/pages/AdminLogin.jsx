@@ -5,67 +5,80 @@ import "../styles/adminLogin.css";
 
 const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [adminId, setAdminId] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  const validatePassword = (pwd) => {
-    const regex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    return regex.test(pwd);
-  };
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const emailInput = String(formData.get("adminEmail") || adminEmail || "").trim().toLowerCase();
+    const passwordInput = String(formData.get("password") || password || "");
 
-    if (!adminId || !password) {
-      setError("Please enter Admin ID and Password");
+    if (!emailInput || !passwordInput) {
+      setError("Please enter Admin Email and Password");
       return;
     }
 
-    if (!/^\d{12}$/.test(adminId)) {
-      setError("Admin ID must be exactly 12 digits");
-      return;
-    }
+    try {
+      setLoading(true);
+      setError("");
 
-    if (!validatePassword(password)) {
-      setError(
-        "Password must contain uppercase, lowercase, number & special character"
-      );
-      return;
-    }
+      const res = await fetch("http://localhost:5000/api/admin/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: emailInput,
+          username: emailInput,
+          identifier: emailInput,
+          password: passwordInput,
+        }),
+      });
 
-    setError("");
-    // Dummy success – backend later
-    navigate("/admin-dashboard");
+      const data = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem("adminToken", data.token);
+        navigate("/admin-dashboard");
+      } else {
+        setError(data.message || "Login failed");
+      }
+
+    } catch (err) {
+      console.log(err);
+      setError("Server not reachable");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="login-container">
       <div className="login-card">
 
-        {/* Header */}
         <div className="login-header">
           <img src="/EduPulse.png" alt="EduPulse Logo" className="login-logo" />
           <p className="tagline">Admin Panel Login</p>
         </div>
 
-        {/* Form */}
         <form className="login-form" onSubmit={handleLogin}>
           {error && <div className="error-box">{error}</div>}
 
-          <label>Admin ID</label>
+          <label>Admin Email</label>
           <div className="input-wrapper">
             <User className="input-icon" size={18} />
             <input
               type="text"
-              placeholder="Enter your admin ID"
-              value={adminId}
-              maxLength={12}
-              pattern="[0-9]{12}"
-              onChange={(e) => setAdminId(e.target.value)}
+              placeholder="Enter your admin email"
+              value={adminEmail}
+              name="adminEmail"
+              autoComplete="username"
+              onChange={(e) => setAdminEmail(e.target.value)}
               required
             />
           </div>
@@ -77,6 +90,8 @@ const AdminLogin = () => {
               type={showPassword ? "text" : "password"}
               placeholder="Enter password"
               value={password}
+              name="password"
+              autoComplete="current-password"
               onChange={(e) => setPassword(e.target.value)}
               required
             />
@@ -88,8 +103,8 @@ const AdminLogin = () => {
             </span>
           </div>
 
-          <button type="submit" className="login-btn">
-            Login
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 

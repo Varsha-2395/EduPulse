@@ -7,6 +7,7 @@ const app = express();
 
 const studentRoutes = require("./routes/students");
 const feedbackRoutes = require("./routes/feedback"); 
+const adminRoutes = require("./routes/admin");
 
 // Middleware
 app.use(cors());
@@ -21,6 +22,7 @@ mongoose
 // ✅ FIXED ROUTE
 app.use("/api/students", studentRoutes);
 app.use("/api/feedback", feedbackRoutes); 
+app.use("/api/admin", adminRoutes);
 
 // Server
 const PORT = process.env.PORT || 5000;
