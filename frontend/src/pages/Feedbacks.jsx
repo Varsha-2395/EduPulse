@@ -1,51 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import AdminLayout from "../components/AdminLayout";
-import { departmentOptions, feedbackEntries, yearOptions } from "../data/feedbackData";
 import "../styles/feedbacks.css";
-
-const positiveKeywords = [
-  "good",
-  "great",
-  "clear",
-  "helpful",
-  "interactive",
-  "supportive",
-  "useful",
-  "easy",
-  "well",
-  "effective",
-  "excellent",
-];
-
-const negativeKeywords = [
-  "bad",
-  "poor",
-  "slow",
-  "fast",
-  "difficult",
-  "hard",
-  "problem",
-  "issue",
-  "confusing",
-  "need",
-  "more",
-];
-
-const detectSentimentFromKeywords = (text) => {
-  const normalized = String(text).toLowerCase();
-  const positiveScore = positiveKeywords.reduce(
-    (score, word) => score + (normalized.includes(word) ? 1 : 0),
-    0
-  );
-  const negativeScore = negativeKeywords.reduce(
-    (score, word) => score + (normalized.includes(word) ? 1 : 0),
-    0
-  );
-
-  if (positiveScore > negativeScore) return "Positive";
-  if (negativeScore > positiveScore) return "Negative";
-  return "Neutral";
-};
 
 const Feedbacks = () => {
   const [department, setDepartment] = useState("All");
@@ -54,75 +9,62 @@ const Feedbacks = () => {
   const [toDate, setToDate] = useState("");
   const [keyword, setKeyword] = useState("");
   const [sentimentFilter, setSentimentFilter] = useState("All");
+
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [totalFeedbacks, setTotalFeedbacks] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
 
   const itemsPerPage = 10;
 
-  const feedbacksWithSentiment = useMemo(
-    () =>
-      feedbackEntries.map((fb) => ({
-        ...fb,
-        detectedSentiment: detectSentimentFromKeywords(fb.comment),
-      })),
-    []
-  );
+  /* ================= FETCH FROM BACKEND ================= */
 
-  const filteredFeedbacks = feedbacksWithSentiment.filter((fb) => {
-    const deptMatch = department === "All" || fb.department === department;
-    const yearMatch = year === "All" || fb.year === year;
-    const fromMatch = !fromDate || new Date(fb.date) >= new Date(fromDate);
-    const toMatch = !toDate || new Date(fb.date) <= new Date(toDate);
-    const keywordMatch =
-      !keyword ||
-      fb.comment.toLowerCase().includes(keyword.toLowerCase()) ||
-      fb.student.toLowerCase().includes(keyword.toLowerCase());
-    const sentimentMatch =
-      sentimentFilter === "All" || fb.detectedSentiment === sentimentFilter;
+  const fetchFeedbacks = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
 
-    return (
-      deptMatch &&
-      yearMatch &&
-      fromMatch &&
-      toMatch &&
-      keywordMatch &&
-      sentimentMatch
-    );
-  });
+      const query = new URLSearchParams({
+        department,
+        year,
+        fromDate,
+        toDate,
+        keyword,
+        sentiment: sentimentFilter,
+        page: currentPage,
+        limit: itemsPerPage,
+      });
 
-  const totalPages = Math.max(1, Math.ceil(filteredFeedbacks.length / itemsPerPage));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const pageItems = filteredFeedbacks.slice(
-    (safeCurrentPage - 1) * itemsPerPage,
-    safeCurrentPage * itemsPerPage
-  );
+      const res = await fetch(
+        `http://localhost:5000/api/feedback/admin?${query.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-  const onDepartmentChange = (value) => {
-    setDepartment(value);
-    setCurrentPage(1);
+      const data = await res.json();
+
+      if (res.ok) {
+        setFeedbacks(data.feedbacks || []);
+        setTotalFeedbacks(data.total || 0);
+        setTotalPages(data.totalPages || 1);
+      } else {
+        console.log(data.message);
+      }
+    } catch (error) {
+      console.log("Fetch error:", error);
+    }
   };
 
-  const onYearChange = (value) => {
-    setYear(value);
-    setCurrentPage(1);
-  };
+  useEffect(() => {
+    fetchFeedbacks();
+  }, [department, year, fromDate, toDate, keyword, sentimentFilter, currentPage]);
 
-  const onFromDateChange = (value) => {
-    setFromDate(value);
-    setCurrentPage(1);
-  };
+  /* ================= RESET PAGE WHEN FILTER CHANGES ================= */
 
-  const onToDateChange = (value) => {
-    setToDate(value);
-    setCurrentPage(1);
-  };
-
-  const onKeywordChange = (value) => {
-    setKeyword(value);
-    setCurrentPage(1);
-  };
-
-  const onSentimentChange = (value) => {
-    setSentimentFilter(value);
+  const handleFilterChange = (setter) => (value) => {
+    setter(value);
     setCurrentPage(1);
   };
 
@@ -131,77 +73,78 @@ const Feedbacks = () => {
       <section className="fbp-root">
         <header className="fbp-header">
           <h1 className="fbp-title">Feedbacks</h1>
-          <div className="fbp-count-pill">{filteredFeedbacks.length} Feedbacks</div>
+          <div className="fbp-count-pill">
+            {totalFeedbacks} Feedbacks
+          </div>
         </header>
 
+        {/* ================= FILTER BAR ================= */}
+
         <div className="fbp-filter-bar">
+
           <div className="fbp-field">
-            <label htmlFor="fbp-department">Department</label>
+            <label>Department</label>
             <select
-              id="fbp-department"
               value={department}
-              onChange={(e) => onDepartmentChange(e.target.value)}
+              onChange={(e) => handleFilterChange(setDepartment)(e.target.value)}
             >
-              {departmentOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option === "All" ? "All Departments" : option}
-                </option>
-              ))}
+              <option value="All">All Departments</option>
+              <option value="CSE">CSE</option>
+              <option value="IT">IT</option>
+              <option value="ECE">ECE</option>
+              <option value="EEE">EEE</option>
             </select>
           </div>
 
           <div className="fbp-field">
-            <label htmlFor="fbp-year">Year</label>
+            <label>Year</label>
             <select
-              id="fbp-year"
               value={year}
-              onChange={(e) => onYearChange(e.target.value)}
+              onChange={(e) => handleFilterChange(setYear)(e.target.value)}
             >
-              {yearOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option === "All" ? "All Years" : option}
-                </option>
-              ))}
+              <option value="All">All Years</option>
+              <option value="1st Year">1st Year</option>
+              <option value="2nd Year">2nd Year</option>
+              <option value="3rd Year">3rd Year</option>
+              <option value="4th Year">4th Year</option>
             </select>
           </div>
 
           <div className="fbp-field">
-            <label htmlFor="fbp-from-date">From Date</label>
+            <label>From Date</label>
             <input
-              id="fbp-from-date"
               type="date"
               value={fromDate}
-              onChange={(e) => onFromDateChange(e.target.value)}
+              onChange={(e) => handleFilterChange(setFromDate)(e.target.value)}
             />
           </div>
 
           <div className="fbp-field">
-            <label htmlFor="fbp-to-date">To Date</label>
+            <label>To Date</label>
             <input
-              id="fbp-to-date"
               type="date"
               value={toDate}
-              onChange={(e) => onToDateChange(e.target.value)}
+              onChange={(e) => handleFilterChange(setToDate)(e.target.value)}
             />
           </div>
 
           <div className="fbp-field">
-            <label htmlFor="fbp-keyword">Sentiment Keyword</label>
+            <label>Sentiment Keyword</label>
             <input
-              id="fbp-keyword"
               type="text"
-              placeholder="e.g. good, need, clear..."
+              placeholder="e.g. good, need..."
               value={keyword}
-              onChange={(e) => onKeywordChange(e.target.value)}
+              onChange={(e) => handleFilterChange(setKeyword)(e.target.value)}
             />
           </div>
 
           <div className="fbp-field">
-            <label htmlFor="fbp-sentiment">Detected Sentiment</label>
+            <label>Detected Sentiment</label>
             <select
-              id="fbp-sentiment"
               value={sentimentFilter}
-              onChange={(e) => onSentimentChange(e.target.value)}
+              onChange={(e) =>
+                handleFilterChange(setSentimentFilter)(e.target.value)
+              }
             >
               <option value="All">All</option>
               <option value="Positive">Positive</option>
@@ -211,42 +154,61 @@ const Feedbacks = () => {
           </div>
         </div>
 
+        {/* ================= FEEDBACK LIST ================= */}
+
         <div className="fbp-list">
-          {pageItems.length > 0 ? (
-            pageItems.map((fb) => (
-              <article key={fb.id} className="fbp-card">
-                <p className="fbp-date">{fb.date} | {fb.department} | {fb.year}</p>
-                <p className={`fbp-detected ${fb.detectedSentiment.toLowerCase()}`}>
-                  Detected: {fb.detectedSentiment}
+          {feedbacks.length > 0 ? (
+            feedbacks.map((fb) => (
+              <article key={fb._id} className="fbp-card">
+                <p className="fbp-date">
+                  {new Date(fb.createdAt)
+                    .toISOString()
+                    .split("T")[0]}{" "}
+                  | {fb.department} | {fb.year}
                 </p>
-                <p className="fbp-comment">{fb.comment}</p>
+
+                <p className={`fbp-detected ${fb.sentiment?.toLowerCase()}`}>
+                  Detected: {fb.sentiment}
+                </p>
+
+                <p className="fbp-comment">{fb.comments}</p>
               </article>
             ))
           ) : (
-            <div className="fbp-empty">No feedback found for selected filters</div>
+            <div className="fbp-empty">
+              No feedback found for selected filters
+            </div>
           )}
         </div>
 
-        {filteredFeedbacks.length > 0 && (
+        {/* ================= PAGINATION ================= */}
+
+        {totalPages > 1 && (
           <footer className="fbp-pagination">
             <button
               type="button"
               className="fbp-page-btn"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={safeCurrentPage === 1}
+              onClick={() =>
+                setCurrentPage((prev) => Math.max(prev - 1, 1))
+              }
+              disabled={currentPage === 1}
             >
               Prev
             </button>
 
             <span className="fbp-page-info">
-              Page {safeCurrentPage} of {totalPages}
+              Page {currentPage} of {totalPages}
             </span>
 
             <button
               type="button"
               className="fbp-page-btn"
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={safeCurrentPage === totalPages}
+              onClick={() =>
+                setCurrentPage((prev) =>
+                  Math.min(prev + 1, totalPages)
+                )
+              }
+              disabled={currentPage === totalPages}
             >
               Next
             </button>

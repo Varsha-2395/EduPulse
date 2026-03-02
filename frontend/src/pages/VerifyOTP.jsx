@@ -9,41 +9,75 @@ const VerifyOTP = () => {
 
   const { otp, regNo } = location.state || {};
 
+  const [currentOtp, setCurrentOtp] = useState(otp || "");
   const [enteredOTP, setEnteredOTP] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [isResending, setIsResending] = useState(false);
 
   const handleVerify = (e) => {
     e.preventDefault();
 
-    if (!otp) {
+    if (!currentOtp) {
       setError("OTP expired. Please resend.");
       return;
     }
 
-    if (enteredOTP !== otp) {
-      setError("Invalid OTP ❌");
+    if (enteredOTP !== currentOtp) {
+      setError("Invalid OTP");
       return;
     }
 
-    console.log("OTP Verified 😌🔥");
-
     navigate("/set-password", { state: { regNo } });
+  };
+
+  const handleResend = async () => {
+    if (!regNo) {
+      setError("Register number missing. Go back and try again.");
+      return;
+    }
+
+    try {
+      setIsResending(true);
+      setError("");
+      setInfo("");
+
+      const res = await fetch("http://localhost:5000/api/students/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ regNo }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Failed to resend OTP");
+        return;
+      }
+
+      if (data.otp) {
+        setCurrentOtp(String(data.otp));
+      }
+
+      setInfo("OTP resent successfully. Check your email.");
+    } catch (err) {
+      setError("Server error while resending OTP");
+    } finally {
+      setIsResending(false);
+    }
   };
 
   return (
     <div className="otp-container">
       <div className="otp-card">
-
         <div className="otp-header">
           <img src="/EduPulse.png" alt="EduPulse Logo" className="otp-logo" />
-          <p className="tagline">
-            Enter the OTP sent to your registered email
-          </p>
+          <p className="tagline">Enter the OTP sent to your registered email</p>
         </div>
 
         <form className="otp-form" onSubmit={handleVerify}>
-
           {error && <div className="error-box">{error}</div>}
+          {info && <div className="success-box">{info}</div>}
 
           <label>One Time Password (OTP)</label>
 
@@ -58,7 +92,9 @@ const VerifyOTP = () => {
               value={enteredOTP}
               onChange={(e) => {
                 setEnteredOTP(e.target.value);
-                if (error) setError("");
+                if (error) {
+                  setError("");
+                }
               }}
             />
           </div>
@@ -69,9 +105,11 @@ const VerifyOTP = () => {
         </form>
 
         <div className="resend">
-          Didn’t receive OTP? <span>Resend</span>
+          Didn't receive OTP?{" "}
+          <span onClick={handleResend} role="button" tabIndex={0}>
+            {isResending ? "Sending..." : "Resend"}
+          </span>
         </div>
-
       </div>
     </div>
   );

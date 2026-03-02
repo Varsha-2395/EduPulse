@@ -43,6 +43,26 @@
   font-weight: 500;
 }
 
+.error-box {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.success-box {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 13px;
+}
+
 /* ===== Input ===== */
 .otp-container .input-wrapper {
   position: relative;

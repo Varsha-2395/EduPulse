@@ -1,15 +1,19 @@
 const mongoose = require("mongoose");
 
-const FeedbackSchema = new mongoose.Schema({
+const feedbackSchema = new mongoose.Schema({
   regNo: String,
-  subject: String,
-  faculty: String,
-  rating: Number,
+  department: String,
+  year: String,
   comments: String,
+  sentiment: {
+    type: String,
+    enum: ["Positive", "Negative", "Neutral"],
+    default: "Neutral",
+  },
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
 
-module.exports = mongoose.model("Feedback", FeedbackSchema);
+module.exports = mongoose.model("Feedback", feedbackSchema);

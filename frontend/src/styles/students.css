@@ -91,10 +91,37 @@
   cursor: not-allowed;
 }
 
-.students-import-note {
-  margin: 0 0 14px;
-  font-size: 13px;
-  color: #4b5563;
+.students-status-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2200;
+}
+
+.students-status-card {
+  min-width: 220px;
+  text-align: center;
+  border-radius: 12px;
+  padding: 14px 22px;
+  font-size: 16px;
+  font-weight: 700;
+  background: #ffffff;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18);
+}
+
+.students-status-card.info {
+  color: #1d4ed8;
+}
+
+.students-status-card.success {
+  color: #166534;
+}
+
+.students-status-card.error {
+  color: #b91c1c;
 }
 
 /* Table */

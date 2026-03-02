@@ -1,78 +1,190 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import AdminLayout from "../components/AdminLayout";
-import { departmentOptions, studentsData, yearOptions } from "../data/feedbackData";
 import "../styles/students.css";
 
 const Students = () => {
-  const [students, setStudents] = useState(studentsData);
+  const [students, setStudents] = useState([]);
   const [search, setSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("All");
   const [yearFilter, setYearFilter] = useState("All");
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [csvMessage, setCsvMessage] = useState("");
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [isImporting, setIsImporting] = useState(false);
+  const [showImportOverlay, setShowImportOverlay] = useState(false);
+  const [importOverlayText, setImportOverlayText] = useState("");
+  const [importOverlayType, setImportOverlayType] = useState("info");
   const fileInputRef = useRef(null);
+
   const studentsPerPage = 10;
+  const cleanDisplayValue = (value) => {
+    let cell = String(value || "").trim();
+    if (!cell) return "";
 
-  const filteredStudents = students.filter((student) => {
-    const matchesSearch = student.name.toLowerCase().includes(search.toLowerCase());
-    const matchesDepartment =
-      departmentFilter === "All" || student.department === departmentFilter;
-    const matchesYear = yearFilter === "All" || student.year === yearFilter;
-
-    return matchesSearch && matchesDepartment && matchesYear;
-  });
-
-  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / studentsPerPage));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const paginatedStudents = filteredStudents.slice(
-    (safeCurrentPage - 1) * studentsPerPage,
-    safeCurrentPage * studentsPerPage
-  );
-
-  const parseCSVLine = (line) => {
-    const result = [];
-    let value = "";
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i += 1) {
-      const char = line[i];
-      if (char === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          value += '"';
-          i += 1;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char === "," && !inQuotes) {
-        result.push(value.trim());
-        value = "";
-      } else {
-        value += char;
-      }
+    if (cell.startsWith("\"") && cell.endsWith("\"")) {
+      cell = cell.slice(1, -1);
     }
 
-    result.push(value.trim());
-    return result;
+    const excelTextMatch = cell.match(/^=\s*"(.+)"$/);
+    if (excelTextMatch) {
+      cell = excelTextMatch[1];
+    }
+
+    if (cell.startsWith("\"") && cell.endsWith("\"")) {
+      cell = cell.slice(1, -1);
+    }
+
+    return cell;
+  };
+  const formatRegNo = (value) => {
+    const raw = cleanDisplayValue(value);
+    if (!raw) return "";
+
+    if (!/^-?\d+(\.\d+)?e[+-]?\d+$/i.test(raw)) {
+      return raw;
+    }
+
+    const [mantissaRaw, exponentRaw] = raw.toLowerCase().split("e");
+    const exponent = parseInt(exponentRaw, 10);
+    if (Number.isNaN(exponent)) return raw;
+
+    const sign = mantissaRaw.startsWith("-") ? "-" : "";
+    const mantissa = mantissaRaw.replace("-", "");
+    const [intPart, fracPart = ""] = mantissa.split(".");
+    const digits = `${intPart}${fracPart}`;
+    const decimalIndex = intPart.length;
+    const newIndex = decimalIndex + exponent;
+
+    let expanded = "";
+    if (newIndex <= 0) {
+      expanded = `0.${"0".repeat(Math.abs(newIndex))}${digits}`;
+    } else if (newIndex >= digits.length) {
+      expanded = `${digits}${"0".repeat(newIndex - digits.length)}`;
+    } else {
+      expanded = `${digits.slice(0, newIndex)}.${digits.slice(newIndex)}`;
+    }
+
+    if (expanded.includes(".")) {
+      expanded = expanded.replace(/\.?0+$/, "");
+    }
+
+    return `${sign}${expanded}`;
+  };
+  const canonicalRegNo = (value) =>
+    formatRegNo(value).toLowerCase().replace(/\s+/g, "");
+
+  const handleImportCSV = async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+  setIsImporting(true);
+  setShowImportOverlay(true);
+  setImportOverlayType("info");
+  setImportOverlayText("Importing...");
+
+  try {
+    const res = await fetch("http://localhost:5000/api/students/import", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      const loaded = await fetchStudents();
+      if (loaded) {
+        setImportOverlayType("success");
+        setImportOverlayText("Imported");
+      } else {
+        setImportOverlayType("error");
+        setImportOverlayText("Import done, table refresh failed");
+      }
+      setTimeout(() => setShowImportOverlay(false), 1200);
+    } else {
+      setImportOverlayType("error");
+      setImportOverlayText(data.message || "Import failed");
+      setTimeout(() => setShowImportOverlay(false), 1500);
+    }
+
+  } catch (error) {
+    console.log(error);
+    setImportOverlayType("error");
+    setImportOverlayText("Server error");
+    setTimeout(() => setShowImportOverlay(false), 1500);
+  } finally {
+    setIsImporting(false);
+    event.target.value = "";
+  }
+};
+
+  /* ================= FETCH STUDENTS ================= */
+
+  const fetchStudents = async () => {
+    try {
+      const query = new URLSearchParams({
+        search,
+        department: departmentFilter,
+        year: yearFilter,
+        page: currentPage,
+        limit: studentsPerPage,
+      });
+
+      const token = localStorage.getItem("adminToken");
+
+      const res = await fetch(
+        `http://localhost:5000/api/students?${query.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        const unique = [];
+        const seen = new Set();
+        for (const student of data.students || []) {
+          const key = canonicalRegNo(student.regNo) || String(student._id || "");
+          if (seen.has(key)) continue;
+          seen.add(key);
+          unique.push(student);
+        }
+
+        setStudents(unique);
+        setTotalPages(data.totalPages);
+        setTotalStudents(data.totalStudents);
+        return true;
+      } else {
+        console.log(data.message);
+        return false;
+      }
+    } catch (error) {
+      console.log("Fetch error:", error);
+      return false;
+    }
   };
 
-  const handleExportCSV = () => {
-    if (!filteredStudents.length) return;
+  useEffect(() => {
+    fetchStudents();
+  }, [search, departmentFilter, yearFilter, currentPage]);
 
-    const headers = "Name,Year,Department,Email,Phone,Feedback\n";
-    const escapeCSV = (value) => `"${String(value).replace(/"/g, '""')}"`;
-    const rows = filteredStudents
-      .map((student) =>
-        [
-          student.name,
-          student.year,
-          student.department,
-          student.email,
-          student.phone,
-          student.feedbackHistory?.[0]?.comment || "",
-        ]
-          .map(escapeCSV)
-          .join(",")
+  /* ================= EXPORT CSV ================= */
+
+  const handleExportCSV = () => {
+    if (!students.length) return;
+
+    const headers = "Name,Year,Department,Email,Phone,RegNo\n";
+    const rows = students
+      .map(
+        (s) => {
+          const regNo = formatRegNo(s.regNo);
+          return `"${s.name}","${s.year}","${s.department}","${s.email}","${s.phone}","	${regNo}"`;
+        }
       )
       .join("\n");
 
@@ -88,101 +200,21 @@ const Students = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleImportCSV = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const text = await file.text();
-    const rows = text
-      .split(/\r?\n/)
-      .map((row) => row.trim())
-      .filter(Boolean);
-
-    if (rows.length < 2) {
-      setCsvMessage("CSV is empty or missing data rows.");
-      event.target.value = "";
-      return;
-    }
-
-    const header = parseCSVLine(rows[0]).map((col) => col.toLowerCase());
-    const getIdx = (name) => header.indexOf(name);
-
-    const nameIdx = getIdx("name");
-    const yearIdx = getIdx("year");
-    const deptIdx = getIdx("department");
-    const emailIdx = getIdx("email");
-    const phoneIdx = getIdx("phone");
-    const feedbackIdx = header.includes("feedback")
-      ? getIdx("feedback")
-      : getIdx("comment");
-
-    if ([nameIdx, yearIdx, deptIdx, emailIdx, phoneIdx].some((idx) => idx === -1)) {
-      setCsvMessage("Required columns: name, year, department, email, phone.");
-      event.target.value = "";
-      return;
-    }
-
-    const baseId = students.length ? Math.max(...students.map((s) => Number(s.id) || 0)) : 0;
-    let importedCount = 0;
-    let skippedCount = 0;
-
-    const importedStudents = rows.slice(1).reduce((acc, row, index) => {
-      const cols = parseCSVLine(row);
-      const name = cols[nameIdx];
-      const year = cols[yearIdx];
-      const department = cols[deptIdx];
-      const email = cols[emailIdx];
-      const phone = cols[phoneIdx];
-      const feedback = feedbackIdx >= 0 ? cols[feedbackIdx] : "";
-
-      if (!name || !year || !department || !email || !phone) {
-        skippedCount += 1;
-        return acc;
-      }
-
-      importedCount += 1;
-      acc.push({
-        id: baseId + index + 1,
-        name,
-        year,
-        department,
-        email,
-        phone,
-        feedbackHistory: [
-          {
-            submittedOn: new Date().toISOString().slice(0, 10),
-            rating: "Neutral",
-            comment: feedback || "Imported via CSV",
-          },
-        ],
-      });
-
-      return acc;
-    }, []);
-
-    if (importedStudents.length) {
-      setStudents((prev) => [...prev, ...importedStudents]);
-      setCurrentPage(1);
-    }
-
-    setCsvMessage(
-      `Imported ${importedCount} student(s)${skippedCount ? `, skipped ${skippedCount} row(s).` : "."}`
-    );
-    event.target.value = "";
-  };
-
   return (
     <AdminLayout>
       <div className="students-container">
+
+        {/* Header */}
         <div className="students-header">
           <h1 className="page-title">Students</h1>
 
           <div className="students-summary">
-            <span className="students-summary-label">Total Students</span>
-            <div className="students-count">{filteredStudents.length}</div>
+            <span>Total Students</span>
+            <div className="students-count">{totalStudents}</div>
           </div>
         </div>
 
+        {/* Controls */}
         <div className="students-controls">
           <input
             type="text"
@@ -201,11 +233,11 @@ const Students = () => {
               setCurrentPage(1);
             }}
           >
-            {departmentOptions.map((option) => (
-              <option key={option} value={option}>
-                {option === "All" ? "All Departments" : option}
-              </option>
-            ))}
+            <option value="All">All Departments</option>
+            <option value="CSE">CSE</option>
+            <option value="IT">IT</option>
+            <option value="ECE">ECE</option>
+            <option value="EEE">EEE</option>
           </select>
 
           <select
@@ -215,41 +247,43 @@ const Students = () => {
               setCurrentPage(1);
             }}
           >
-            {yearOptions.map((option) => (
-              <option key={option} value={option}>
-                {option === "All" ? "All Years" : option}
-              </option>
-            ))}
+            <option value="All">All Years</option>
+            <option value="1st Year">1st Year</option>
+            <option value="2nd Year">2nd Year</option>
+            <option value="3rd Year">3rd Year</option>
+            <option value="4th Year">4th Year</option>
           </select>
         </div>
 
+        {/* Actions */}
         <div className="students-actions">
           <button
             type="button"
             className="students-action-btn"
+            disabled={isImporting}
             onClick={() => fileInputRef.current?.click()}
           >
-            Import CSV
+            {isImporting ? "Importing..." : "Import CSV"}
           </button>
+
           <button
             type="button"
             className="students-action-btn secondary"
             onClick={handleExportCSV}
-            disabled={!filteredStudents.length}
           >
             Export CSV
           </button>
+
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv,text/csv"
-            onChange={handleImportCSV}
+            accept=".csv"
             hidden
+            onChange={handleImportCSV}
           />
         </div>
 
-        {csvMessage ? <p className="students-import-note">{csvMessage}</p> : null}
-
+        {/* Table */}
         <div className="students-table">
           <table>
             <thead>
@@ -257,30 +291,27 @@ const Students = () => {
                 <th>Name</th>
                 <th>Year</th>
                 <th>Department</th>
-                <th>Email</th>
-                <th>Phone</th>
+                <th>Register No</th>
               </tr>
             </thead>
 
             <tbody>
-              {paginatedStudents.length > 0 ? (
-                paginatedStudents.map((student) => (
+              {students.length > 0 ? (
+                students.map((student) => (
                   <tr
-                    key={student.id}
+                    key={student._id}
                     className="student-row"
                     onClick={() => setSelectedStudent(student)}
-                    onTouchStart={() => setSelectedStudent(student)}
                   >
-                    <td data-label="Name">{student.name}</td>
-                    <td data-label="Year">{student.year}</td>
-                    <td data-label="Department">{student.department}</td>
-                    <td data-label="Email">{student.email}</td>
-                    <td data-label="Phone">{student.phone}</td>
+                    <td>{cleanDisplayValue(student.name)}</td>
+                    <td>{cleanDisplayValue(student.year)}</td>
+                    <td>{cleanDisplayValue(student.department)}</td>
+                    <td>{formatRegNo(student.regNo) || "N/A"}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="no-data">
+                  <td colSpan="4" className="no-data">
                     No students found
                   </td>
                 </tr>
@@ -289,75 +320,75 @@ const Students = () => {
           </table>
         </div>
 
-        {filteredStudents.length > 0 && (
+        {/* Pagination */}
+        {totalPages > 1 && (
           <div className="students-pagination">
             <button
-              type="button"
               className="pagination-btn"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={safeCurrentPage === 1}
+              onClick={() =>
+                setCurrentPage((prev) => Math.max(prev - 1, 1))
+              }
+              disabled={currentPage === 1}
             >
               Prev
             </button>
 
             <span className="pagination-info">
-              Page {safeCurrentPage} of {totalPages}
+              Page {currentPage} of {totalPages}
             </span>
 
             <button
-              type="button"
               className="pagination-btn"
               onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                setCurrentPage((prev) =>
+                  Math.min(prev + 1, totalPages)
+                )
               }
-              disabled={safeCurrentPage === totalPages}
+              disabled={currentPage === totalPages}
             >
               Next
             </button>
           </div>
         )}
 
+        {/* Modal */}
         {selectedStudent && (
           <div
             className="student-modal-overlay"
             onClick={() => setSelectedStudent(null)}
           >
-            <div className="student-modal" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="student-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="modal-header">
-                <h2>{selectedStudent.name}</h2>
-                <button
-                  type="button"
-                  onClick={() => setSelectedStudent(null)}
-                  aria-label="Close"
-                >
-                  x
-                </button>
+                <h2>{cleanDisplayValue(selectedStudent.name)}</h2>
+                <button onClick={() => setSelectedStudent(null)}>x</button>
               </div>
 
               <div className="student-profile">
-                <p><strong>Year:</strong> {selectedStudent.year}</p>
-                <p><strong>Department:</strong> {selectedStudent.department}</p>
-                <p><strong>Email:</strong> {selectedStudent.email}</p>
-                <p><strong>Phone:</strong> {selectedStudent.phone}</p>
-              </div>
-
-              <div className="student-feedback">
-                <h3>Feedback History</h3>
-                {selectedStudent.feedbackHistory.map((entry, index) => (
-                  <div key={`${selectedStudent.id}-${index}`} className="feedback-history-card">
-                    <p className="feedback-date">
-                      Submitted On: {entry.submittedOn} | Rating: {entry.rating}
-                    </p>
-                    <p className="feedback-comment">{entry.comment}</p>
-                  </div>
-                ))}
+                <p><strong>Register No:</strong> {formatRegNo(selectedStudent.regNo) || "N/A"}</p>
+                <p><strong>Year:</strong> {cleanDisplayValue(selectedStudent.year)}</p>
+                <p><strong>Department:</strong> {cleanDisplayValue(selectedStudent.department)}</p>
+                <p><strong>Email:</strong> {cleanDisplayValue(selectedStudent.email)}</p>
+                <p><strong>Phone:</strong> {cleanDisplayValue(selectedStudent.phone)}</p>
               </div>
             </div>
           </div>
         )}
+
+        {showImportOverlay && (
+          <div className="students-status-overlay">
+            <div className={`students-status-card ${importOverlayType}`}>
+              {importOverlayText}
+            </div>
+          </div>
+        )}
+
       </div>
     </AdminLayout>
   );
 };
 
 export default Students;
+

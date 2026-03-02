@@ -30,4 +30,62 @@ router.get("/:regNo", verifyToken, async (req, res) => {
   }
 });
 
+router.get("/admin", async (req, res) => {
+  try {
+    const {
+      department,
+      year,
+      fromDate,
+      toDate,
+      sentiment,
+      keyword,
+      page = 1,
+      limit = 5,
+    } = req.query;
+
+    const query = {};
+
+    if (department && department !== "All") {
+      query.department = department;
+    }
+
+    if (year && year !== "All") {
+      query.year = year;
+    }
+
+    if (sentiment && sentiment !== "All") {
+      query.sentiment = sentiment;
+    }
+
+    if (keyword) {
+      query.comments = { $regex: keyword, $options: "i" };
+    }
+
+    if (fromDate && toDate) {
+      query.createdAt = {
+        $gte: new Date(fromDate),
+        $lte: new Date(toDate),
+      };
+    }
+
+    const total = await Feedback.countDocuments(query);
+
+    const feedbacks = await Feedback.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    res.json({
+      feedbacks,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: parseInt(page),
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

@@ -7,6 +7,7 @@ const StudentDashboard = () => {
   const navigate = useNavigate();
 
   const student = JSON.parse(localStorage.getItem("student"));
+  const studentInitial = String(student?.name || "S").trim().charAt(0).toUpperCase();
 
   if (!student) {
     navigate("/login"); // safety check 😏
@@ -39,11 +40,9 @@ const StudentDashboard = () => {
       <div className="dashboard-content">
         {/* ===== Student Card (Full Width Header) ===== */}
         <div className="welcome-card">
-          <img
-            src="/student-avatar.png"
-            alt="Student Avatar"
-            className="student-avatar"
-          />
+          <div className="student-avatar" aria-label="Student Initial">
+            {studentInitial}
+          </div>
 
           <div className="student-info">
             <h2>Welcome, {student.name} 👋</h2>
