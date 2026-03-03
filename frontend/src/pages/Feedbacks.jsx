@@ -16,6 +16,20 @@ const Feedbacks = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const itemsPerPage = 10;
+  const formatDateTime = (value) => {
+    const dateObj = new Date(value);
+    if (Number.isNaN(dateObj.getTime())) return "Invalid date";
+
+    const date = dateObj.toISOString().split("T")[0];
+    const time = dateObj.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+
+    return `${date} ${time}`;
+  };
 
   /* ================= FETCH FROM BACKEND ================= */
 
@@ -161,10 +175,7 @@ const Feedbacks = () => {
             feedbacks.map((fb) => (
               <article key={fb._id} className="fbp-card">
                 <p className="fbp-date">
-                  {new Date(fb.createdAt)
-                    .toISOString()
-                    .split("T")[0]}{" "}
-                  | {fb.department} | {fb.year}
+                  {formatDateTime(fb.createdAt)}
                 </p>
 
                 <p className={`fbp-detected ${fb.sentiment?.toLowerCase()}`}>

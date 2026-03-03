@@ -156,8 +156,12 @@ const Students = () => {
         }
 
         setStudents(unique);
-        setTotalPages(data.totalPages);
-        setTotalStudents(data.totalStudents);
+        setTotalPages(data.totalPages || 1);
+        setTotalStudents(
+          typeof data.totalStudents === "number"
+            ? data.totalStudents
+            : (typeof data.total === "number" ? data.total : unique.length)
+        );
         return true;
       } else {
         console.log(data.message);

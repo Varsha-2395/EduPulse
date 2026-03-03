@@ -75,6 +75,7 @@
 
 .report-chart-wrap {
   height: 280px;
+  position: relative;
 }
 
 .rating-filter-count {
@@ -98,9 +99,13 @@
 }
 
 .export-count {
-  margin: 0;
+  margin: 10px 0 0;
   font-size: 13px;
   color: #4b5563;
+}
+
+.export-filters {
+  margin-top: 12px;
 }
 
 /* Ratings */
@@ -169,6 +174,20 @@
 
   .reports-toolbar {
     justify-content: flex-start;
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .reports-filters {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .reports-filters select,
+  .reports-filters input[type="date"] {
+    width: 100%;
+    min-width: 0;
   }
 
   .report-chart-card {
@@ -177,7 +196,7 @@
   }
 
   .report-chart-wrap {
-    height: 240px;
+    height: 220px;
   }
 
   .report-visual-grid {

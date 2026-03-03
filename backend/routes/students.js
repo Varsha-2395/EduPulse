@@ -135,7 +135,7 @@ router.post("/", async (req, res) => {
 });
 
 /* ================= GET STUDENTS ================= */
-router.get("/", verifyToken, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const {
       search = "",
