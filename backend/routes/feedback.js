@@ -1,8 +1,12 @@
 const express = require("express");
 const router = express.Router();
+const axios = require("axios");
 const Feedback = require("../models/Feedback");
 const Student = require("../models/Student");
 const verifyToken = require("../middleware/auth");
+const HF_MODEL_URL =
+  "https://router.huggingface.co/hf-inference/models/cardiffnlp/twitter-roberta-base-sentiment-latest";
+const getHfApiKey = () => String(process.env.HF_API_KEY || "").trim();
 
 const normalizeValue = (value = "") => String(value).trim().toLowerCase();
 
@@ -28,6 +32,83 @@ const matchesAlias = (filterValue, sourceValue, aliasMap) => {
   return accepted.some((item) => source.includes(item));
 };
 
+const sentimentLabelMap = {
+  POSITIVE: "Positive",
+  NEUTRAL: "Neutral",
+  NEGATIVE: "Negative",
+  LABEL_0: "Negative",
+  LABEL_1: "Neutral",
+  LABEL_2: "Positive",
+};
+
+const toSentiment = (label = "") => sentimentLabelMap[String(label).trim().toUpperCase()] || "";
+
+const parseSentimentLabel = (data) => {
+  if (!data) return "";
+
+  if (Array.isArray(data)) {
+    if (Array.isArray(data[0])) {
+      const ranked = [...data[0]].sort((a, b) => (b?.score || 0) - (a?.score || 0));
+      return ranked[0]?.label || "";
+    }
+    const ranked = [...data].sort((a, b) => (b?.score || 0) - (a?.score || 0));
+    return ranked[0]?.label || "";
+  }
+
+  if (typeof data === "object") {
+    return data.label || "";
+  }
+
+  return "";
+};
+
+const analyzeSentiment = async (text) => {
+  const hfApiKey = getHfApiKey();
+  if (!hfApiKey) {
+    const err = new Error("HF_API_KEY missing");
+    err.statusCode = 500;
+    throw err;
+  }
+
+  try {
+    const response = await axios.post(
+      HF_MODEL_URL,
+      {
+        inputs: text,
+        options: { wait_for_model: true },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${hfApiKey}`,
+        },
+        timeout: 15000,
+      }
+    );
+
+    if (response?.data?.error) {
+      const err = new Error(`Hugging Face error: ${response.data.error}`);
+      err.statusCode = 502;
+      throw err;
+    }
+
+    const mapped = toSentiment(parseSentimentLabel(response.data));
+    if (!mapped) {
+      const err = new Error("Unable to map sentiment label from Hugging Face response");
+      err.statusCode = 502;
+      throw err;
+    }
+    return mapped;
+  } catch (error) {
+    const hfError = error.response?.data || error.message;
+    console.log("Sentiment API error:", hfError);
+    if (error.statusCode) throw error;
+
+    const err = new Error("Sentiment API request failed");
+    err.statusCode = 502;
+    throw err;
+  }
+};
+
 router.post("/", verifyToken, async (req, res) => {
   try {
     const regNo = String(req.body?.regNo || "").trim();
@@ -42,7 +123,7 @@ router.post("/", verifyToken, async (req, res) => {
     const feedback = new Feedback({
       regNo,
       comments,
-      sentiment: req.body?.sentiment,
+      sentiment: await analyzeSentiment(comments),
       department: req.body?.department || student?.department || "",
       year: req.body?.year || student?.year || "",
     });
@@ -53,7 +134,7 @@ router.post("/", verifyToken, async (req, res) => {
       message: "Feedback stored successfully",
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(err.statusCode || 500).json({ message: err.message });
   }
 });
 

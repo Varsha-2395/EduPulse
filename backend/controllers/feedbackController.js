@@ -1,8 +1,38 @@
 const Feedback = require("../models/Feedback");
+const axios = require("axios");
+
+const HF_API_KEY = process.env.HF_API_KEY;
 
 const submitFeedback = async (req, res) => {
   try {
-    const feedback = new Feedback(req.body);
+
+    const { comments } = req.body;
+
+    let sentimentResult = "Neutral";
+
+    // HuggingFace sentiment API
+    const response = await axios.post(
+      "https://router.huggingface.co/hf-inference/models/cardiffnlp/twitter-roberta-base-sentiment-latest",
+      { inputs: comments },
+      {
+        headers: {
+          Authorization: `Bearer ${HF_API_KEY}`,
+        },
+      }
+    );
+
+    const label = response.data[0][0].label;
+
+    if (label === "POSITIVE" || label === "LABEL_2") sentimentResult = "Positive";
+    if (label === "NEUTRAL" || label === "LABEL_1") sentimentResult = "Neutral";
+    if (label === "NEGATIVE" || label === "LABEL_0") sentimentResult = "Negative";
+
+    // save feedback with sentiment
+    const feedback = new Feedback({
+      ...req.body,
+      sentiment: sentimentResult,
+    });
+
     await feedback.save();
 
     res.status(201).json({
@@ -11,14 +41,17 @@ const submitFeedback = async (req, res) => {
     });
 
   } catch (err) {
+
+    console.log("Sentiment API error:", err.response?.data || err.message);
+
     res.status(500).json({ error: err.message });
   }
 };
 
 const getStudentFeedback = async (req, res) => {
   try {
-    const { regNo } = req.params;
 
+    const { regNo } = req.params;
     const feedbacks = await Feedback.find({ regNo });
 
     res.json(feedbacks);
@@ -30,8 +63,8 @@ const getStudentFeedback = async (req, res) => {
 
 const getAllFeedback = async (req, res) => {
   try {
-    const feedbacks = await Feedback.find();
 
+    const feedbacks = await Feedback.find();
     res.json(feedbacks);
 
   } catch (err) {

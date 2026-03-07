@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
   CategoryScale,
@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 
 import AdminLayout from "../components/AdminLayout";
-import { dashboardMetrics, highlightsData, monthlyTrendData } from "../data/feedbackData";
 import "../styles/adminDashboard.css";
 
 ChartJS.register(
@@ -32,7 +31,52 @@ ChartJS.register(
 );
 
 const AdminDashboard = () => {
-  const trendData = {
+  const [metrics, setMetrics] = useState({
+    totalStudents: 0,
+    totalFeedback: 0,
+    positive: 0,
+    neutral: 0,
+    negative: 0,
+    notSubmitted: 0,
+  });
+  const [monthlyTrendData, setMonthlyTrendData] = useState([]);
+  const [highlightsData, setHighlightsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await fetch("http://localhost:5000/api/dashboard");
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.message || "Failed to load dashboard");
+        }
+
+        setMetrics({
+          totalStudents: data?.metrics?.totalStudents || 0,
+          totalFeedback: data?.metrics?.totalFeedback || 0,
+          positive: data?.metrics?.positive || 0,
+          neutral: data?.metrics?.neutral || 0,
+          negative: data?.metrics?.negative || 0,
+          notSubmitted: data?.metrics?.notSubmitted || 0,
+        });
+        setMonthlyTrendData(Array.isArray(data?.monthlyTrend) ? data.monthlyTrend : []);
+        setHighlightsData(Array.isArray(data?.highlights) ? data.highlights : []);
+      } catch (err) {
+        setError(err.message || "Unable to load dashboard");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
+  const trendData = useMemo(() => ({
     labels: monthlyTrendData.map((item) => item.label),
     datasets: [
       {
@@ -47,7 +91,7 @@ const AdminDashboard = () => {
         fill: true,
       },
     ],
-  };
+  }), [monthlyTrendData]);
 
   const trendOptions = {
     responsive: true,
@@ -71,14 +115,16 @@ const AdminDashboard = () => {
   return (
     <AdminLayout>
       <h1 className="page-title">Admin Dashboard</h1>
+      {loading && <p>Loading dashboard...</p>}
+      {error && <p>{error}</p>}
 
       <div className="card-grid">
-        <Card icon={<Users />} title="Total Students" value={dashboardMetrics.totalStudents} color="blue" />
-        <Card icon={<MessageSquare />} title="Total Feedback" value={dashboardMetrics.totalFeedback} color="violet" />
-        <Card icon={<ThumbsUp />} title="Positive" value={dashboardMetrics.positive} color="green" />
-        <Card icon={<Minus />} title="Neutral" value={dashboardMetrics.neutral} color="yellow" />
-        <Card icon={<ThumbsDown />} title="Negative" value={dashboardMetrics.negative} color="red" />
-        <Card icon={<AlertCircle />} title="Not Submitted" value={dashboardMetrics.notSubmitted} color="orange" />
+        <Card icon={<Users />} title="Total Students" value={metrics.totalStudents} color="blue" />
+        <Card icon={<MessageSquare />} title="Total Feedback" value={metrics.totalFeedback} color="violet" />
+        <Card icon={<ThumbsUp />} title="Positive" value={metrics.positive} color="green" />
+        <Card icon={<Minus />} title="Neutral" value={metrics.neutral} color="yellow" />
+        <Card icon={<ThumbsDown />} title="Negative" value={metrics.negative} color="red" />
+        <Card icon={<AlertCircle />} title="Not Submitted" value={metrics.notSubmitted} color="orange" />
       </div>
 
       <div className="trend-section">
@@ -102,6 +148,7 @@ const AdminDashboard = () => {
               <p className="highlight-text">{item.text}</p>
             </div>
           ))}
+          {!highlightsData.length && !loading && <p>No highlights available.</p>}
         </div>
       </div>
     </AdminLayout>

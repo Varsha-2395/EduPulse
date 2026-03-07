@@ -196,13 +196,31 @@ const Reports = () => {
       "_blank"
     );
   };
+  const handleOverallDownload = () => {
+    const query = new URLSearchParams({
+      department: departmentFilter,
+      year: yearFilter,
+      fromDate,
+      toDate,
+      sentiment: ratingFilter,
+    });
+    window.open(
+      `http://localhost:5000/api/reports/download-overall-pdf?${query.toString()}`,
+      "_blank"
+    );
+  };
 
   return (
     <AdminLayout>
       <div className="reports-container">
         <div className="reports-header">
-          <h1>Reports</h1>
-          <p>Class-wise Feedback Reports</p>
+          <div>
+            <h1>Reports</h1>
+            <p>Class-wise Feedback Reports</p>
+          </div>
+          <button className="overall-report-btn" onClick={handleOverallDownload}>
+            Overall Reports Download (PDF)
+          </button>
         </div>
 
         {/* ================= FILTERS ================= */}

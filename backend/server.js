@@ -1,7 +1,8 @@
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-require("dotenv").config();
 
 const app = express();
 
@@ -9,6 +10,9 @@ const studentRoutes = require("./routes/students");
 const feedbackRoutes = require("./routes/feedback"); 
 const adminRoutes = require("./routes/admin");
 const reportRoutes = require("./routes/reports");
+const dashboardRoutes = require("./routes/dashboard");
+const speechRoutes = require("./routes/speech");
+const sentimentRoutes = require("./routes/sentiment");
 
 // Middleware
 app.use(cors());
@@ -25,6 +29,9 @@ app.use("/api/students", studentRoutes);
 app.use("/api/feedback", feedbackRoutes); 
 app.use("/api/admin", adminRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api", speechRoutes);
+app.use("/api", sentimentRoutes);
 
 // Server
 const PORT = process.env.PORT || 5000;
