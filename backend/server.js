@@ -11,8 +11,8 @@ const feedbackRoutes = require("./routes/feedback");
 const adminRoutes = require("./routes/admin");
 const reportRoutes = require("./routes/reports");
 const dashboardRoutes = require("./routes/dashboard");
-const speechRoutes = require("./routes/speech");
 const sentimentRoutes = require("./routes/sentiment");
+const summaryRoutes = require("./routes/summary");
 
 // Middleware
 app.use(cors());
@@ -30,8 +30,8 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-app.use("/api", speechRoutes);
 app.use("/api", sentimentRoutes);
+app.use("/api", summaryRoutes);
 
 // Server
 const PORT = process.env.PORT || 5000;

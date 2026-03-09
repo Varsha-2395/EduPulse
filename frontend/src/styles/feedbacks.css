@@ -123,6 +123,33 @@
   color: #991b1b;
 }
 
+.fbp-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fbp-repeat-badge {
+  margin: 0 0 8px;
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #ffedd5;
+  color: #9a3412;
+  border: 1px solid #fdba74;
+}
+
+.fbp-class-tag {
+  margin: 0 0 8px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .fbp-empty {
   border: 1px dashed #cbd5e1;
   border-radius: 12px;

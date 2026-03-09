@@ -117,11 +117,21 @@ const Reports = () => {
 
   /* ================= CHART DATA ================= */
 
+  const sentimentCountByLabel = sentimentStats.reduce((acc, item) => {
+    const key = String(item?._id || "").trim();
+    acc[key] = item?.count || 0;
+    return acc;
+  }, {});
+
   const pieData = {
-    labels: sentimentStats.map((item) => item._id),
+    labels: ["Positive", "Neutral", "Negative"],
     datasets: [
       {
-        data: sentimentStats.map((item) => item.count),
+        data: [
+          sentimentCountByLabel.Positive || 0,
+          sentimentCountByLabel.Neutral || 0,
+          sentimentCountByLabel.Negative || 0,
+        ],
         backgroundColor: ["#16a34a", "#ca8a04", "#dc2626"],
         borderColor: "#ffffff",
         borderWidth: 2,

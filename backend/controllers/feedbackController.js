@@ -1,12 +1,16 @@
 const Feedback = require("../models/Feedback");
 const axios = require("axios");
 
-const HF_API_KEY = process.env.HF_API_KEY;
+const getHfApiKey = () => String(process.env.HF_API_KEY || "").trim();
 
 const submitFeedback = async (req, res) => {
   try {
 
     const { comments } = req.body;
+    const hfApiKey = getHfApiKey();
+    if (!hfApiKey) {
+      return res.status(500).json({ error: "HF_API_KEY missing" });
+    }
 
     let sentimentResult = "Neutral";
 
@@ -16,7 +20,7 @@ const submitFeedback = async (req, res) => {
       { inputs: comments },
       {
         headers: {
-          Authorization: `Bearer ${HF_API_KEY}`,
+          Authorization: `Bearer ${hfApiKey}`,
         },
       }
     );

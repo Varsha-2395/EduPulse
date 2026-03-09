@@ -1,12 +1,16 @@
 const axios = require("axios");
 
-const HF_API_KEY = process.env.HF_API_KEY;
+const getHfApiKey = () => String(process.env.HF_API_KEY || "").trim();
 
 exports.analyzeSentiment = async (req, res) => {
 
   try {
 
     const { text } = req.body;
+    const hfApiKey = getHfApiKey();
+    if (!hfApiKey) {
+      return res.status(500).json({ message: "HF_API_KEY missing" });
+    }
 
     const response = await axios.post(
       "https://router.huggingface.co/hf-inference/models/cardiffnlp/twitter-roberta-base-sentiment-latest",
@@ -15,7 +19,7 @@ exports.analyzeSentiment = async (req, res) => {
       },
       {
         headers: {
-          Authorization: `Bearer ${HF_API_KEY}`
+          Authorization: `Bearer ${hfApiKey}`
         }
       }
     );

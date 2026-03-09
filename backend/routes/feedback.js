@@ -32,6 +32,16 @@ const matchesAlias = (filterValue, sourceValue, aliasMap) => {
   return accepted.some((item) => source.includes(item));
 };
 
+const normalizeCommentKey = (text = "") =>
+  String(text)
+    .trim()
+    .toLowerCase()
+    .replace(/[\s\W_]+/g, " ")
+    .trim();
+
+const classCommentKey = (feedback = {}) =>
+  `${normalizeValue(feedback.year)}||${normalizeValue(feedback.department)}||${normalizeCommentKey(feedback.comments)}`;
+
 const sentimentLabelMap = {
   POSITIVE: "Positive",
   NEUTRAL: "Neutral",
@@ -217,9 +227,26 @@ router.get("/admin", async (req, res) => {
         return true;
       });
 
-    const total = filtered.length;
+    const classCommentCounts = filtered.reduce((acc, fb) => {
+      const key = classCommentKey(fb);
+      if (!key.endsWith("||")) {
+        acc.set(key, (acc.get(key) || 0) + 1);
+      }
+      return acc;
+    }, new Map());
+
+    const enriched = filtered.map((fb) => {
+      const repeatedCount = classCommentCounts.get(classCommentKey(fb)) || 1;
+      return {
+        ...fb,
+        repeatedCount,
+        isRepeatedInClass: repeatedCount > 1,
+      };
+    });
+
+    const total = enriched.length;
     const startIndex = (parsedPage - 1) * parsedLimit;
-    const feedbacks = filtered.slice(startIndex, startIndex + parsedLimit);
+    const feedbacks = enriched.slice(startIndex, startIndex + parsedLimit);
 
     res.json({
       feedbacks,

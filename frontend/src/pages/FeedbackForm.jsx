@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mic, MicOff, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import "../styles/feedbackForm.css";
 
 const FeedbackForm = () => {
@@ -8,82 +8,17 @@ const FeedbackForm = () => {
   const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [voiceStatus, setVoiceStatus] = useState("Click voice input to start.");
-
-  const [mediaRecorder, setMediaRecorder] = useState(null);
-  const [audioChunks, setAudioChunks] = useState([]);
 
   const navigate = useNavigate();
 
   const student = JSON.parse(localStorage.getItem("student"));
   const token = localStorage.getItem("token");
 
-  const handleToggleListening = async () => {
-
-    if (isListening && mediaRecorder) {
-      mediaRecorder.stop();
-      setIsListening(false);
-      setVoiceStatus("Processing speech...");
-      return;
-    }
-
-    try {
-
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      const recorder = new MediaRecorder(stream);
-
-      setMediaRecorder(recorder);
-      setAudioChunks([]);
-
-      recorder.ondataavailable = (event) => {
-        setAudioChunks((prev) => [...prev, event.data]);
-      };
-
-      recorder.onstop = async () => {
-
-        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-
-        const formData = new FormData();
-        formData.append("audio", audioBlob);
-
-        try {
-
-          const res = await fetch("http://localhost:5000/api/speech-to-text", {
-            method: "POST",
-            body: formData
-          });
-
-          const data = await res.json();
-
-          if (data.text) {
-            setFeedback((prev) => prev + " " + data.text);
-          }
-
-          setVoiceStatus("Speech converted successfully.");
-
-        } catch (err) {
-
-          console.log(err);
-          setVoiceStatus("Speech processing failed.");
-
-        }
-
-      };
-
-      recorder.start();
-
-      setIsListening(true);
-      setVoiceStatus("Recording... Speak now 🎤");
-
-    } catch (error) {
-
-      console.log(error);
-      setVoiceStatus("Microphone access denied.");
-
-    }
-
+  const handleSessionExpired = () => {
+    localStorage.removeItem("student");
+    localStorage.removeItem("token");
+    alert("Session expired. Please login again.");
+    navigate("/login");
   };
 
   const handleSubmit = async (e) => {
@@ -91,12 +26,12 @@ const FeedbackForm = () => {
     e.preventDefault();
 
     if (!student || !token) {
-      alert("Session expired 😏");
+      handleSessionExpired();
       return;
     }
 
     if (!feedback.trim()) {
-      alert("Feedback empty 😏");
+      alert("Feedback empty ??");
       return;
     }
 
@@ -121,13 +56,15 @@ const FeedbackForm = () => {
       if (res.ok) {
 
         setFeedback("");
-        setVoiceStatus("Click voice input to start.");
         setShowPopup(true);
 
         setTimeout(() => navigate(-1), 1500);
 
       } else {
-
+        if (res.status === 401) {
+          handleSessionExpired();
+          return;
+        }
         alert(data.message || "Error");
 
       }
@@ -167,18 +104,6 @@ const FeedbackForm = () => {
             required
           />
 
-          <button
-            type="button"
-            className={`voice-box ${isListening ? "voice-box-listening" : ""}`}
-            onClick={handleToggleListening}
-            disabled={isSubmitting}
-          >
-            {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-            {isListening ? "Stop recording" : "Use voice input"}
-          </button>
-
-          <p className="voice-status">{voiceStatus}</p>
-
           <button type="submit" className="submit-btn" disabled={isSubmitting}>
             <Send size={16} />
             {isSubmitting ? "Submitting..." : "Submit Feedback"}
@@ -189,7 +114,7 @@ const FeedbackForm = () => {
         {showPopup && (
           <div className="popup-backdrop">
             <div className="success-popup">
-              <h3>Feedback Submitted 😌🔥</h3>
+              <h3>Feedback Submitted ????</h3>
               <p>Thank you for your feedback</p>
             </div>
           </div>

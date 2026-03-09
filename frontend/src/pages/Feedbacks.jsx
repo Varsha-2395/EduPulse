@@ -178,8 +178,19 @@ const Feedbacks = () => {
                   {formatDateTime(fb.createdAt)}
                 </p>
 
-                <p className={`fbp-detected ${fb.sentiment?.toLowerCase()}`}>
-                  Detected: {fb.sentiment}
+                <div className="fbp-meta-row">
+                  <p className={`fbp-detected ${fb.sentiment?.toLowerCase()}`}>
+                    Detected: {fb.sentiment}
+                  </p>
+                  {fb.isRepeatedInClass && (
+                    <p className="fbp-repeat-badge">
+                      Repeated x{fb.repeatedCount} in this class
+                    </p>
+                  )}
+                </div>
+
+                <p className="fbp-class-tag">
+                  {fb.year || "-"} - {fb.department || "-"}
                 </p>
 
                 <p className="fbp-comment">{fb.comments}</p>
