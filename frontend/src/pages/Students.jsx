@@ -15,9 +15,52 @@ const Students = () => {
   const [showImportOverlay, setShowImportOverlay] = useState(false);
   const [importOverlayText, setImportOverlayText] = useState("");
   const [importOverlayType, setImportOverlayType] = useState("info");
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [isAddingStudent, setIsAddingStudent] = useState(false);
+  const [addStudentError, setAddStudentError] = useState("");
+  const [isEditingStudent, setIsEditingStudent] = useState(false);
+  const [isSavingStudent, setIsSavingStudent] = useState(false);
+  const [editStudentError, setEditStudentError] = useState("");
+  const [editableStudent, setEditableStudent] = useState(null);
+  const [newStudent, setNewStudent] = useState({
+    name: "",
+    year: "1st Year",
+    department: "Computer Science and Engineering",
+    email: "",
+    phone: "",
+    regNo: "",
+  });
   const fileInputRef = useRef(null);
 
   const studentsPerPage = 10;
+  const toUiMessage = (payload, fallbackMessage) => {
+    if (!payload) return fallbackMessage;
+
+    if (typeof payload === "string") return payload;
+
+    if (typeof payload.message === "string" && payload.message.trim()) {
+      return payload.message;
+    }
+
+    if (typeof payload.error === "string" && payload.error.trim()) {
+      return payload.error;
+    }
+
+    if (Array.isArray(payload.errors) && payload.errors.length) {
+      return payload.errors
+        .map((item) => item?.message || item?.msg || "")
+        .filter(Boolean)
+        .join(", ") || fallbackMessage;
+    }
+
+    if (payload.error && typeof payload.error === "object") {
+      if (typeof payload.error.message === "string" && payload.error.message.trim()) {
+        return payload.error.message;
+      }
+    }
+
+    return fallbackMessage;
+  };
   const cleanDisplayValue = (value) => {
     let cell = String(value || "").trim();
     if (!cell) return "";
@@ -74,6 +117,105 @@ const Students = () => {
   const canonicalRegNo = (value) =>
     formatRegNo(value).toLowerCase().replace(/\s+/g, "");
 
+  const openStudentModal = (student) => {
+    setSelectedStudent(student);
+    setEditableStudent({
+      name: String(student?.name || ""),
+      year: String(student?.year || "1st Year"),
+      department: String(student?.department || "Computer Science and Engineering"),
+      email: String(student?.email || ""),
+      phone: String(student?.phone || ""),
+      regNo: String(student?.regNo || ""),
+    });
+    setIsEditingStudent(false);
+    setEditStudentError("");
+  };
+
+  const closeStudentModal = () => {
+    if (isSavingStudent) return;
+    setSelectedStudent(null);
+    setEditableStudent(null);
+    setIsEditingStudent(false);
+    setEditStudentError("");
+  };
+
+  const handleEditStudentChange = (event) => {
+    const { name, value } = event.target;
+    setEditableStudent((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveStudent = async (event) => {
+    event.preventDefault();
+
+    if (!selectedStudent?._id || !editableStudent) return;
+
+    const payload = {
+      name: String(editableStudent.name || "").trim(),
+      year: String(editableStudent.year || "").trim(),
+      department: String(editableStudent.department || "").trim(),
+      email: String(editableStudent.email || "").trim().toLowerCase(),
+      phone: String(editableStudent.phone || "").trim(),
+      regNo: String(editableStudent.regNo || "").trim(),
+    };
+
+    if (!payload.name || !payload.regNo) {
+      setEditStudentError("Name and Register No are required.");
+      return;
+    }
+
+    const token = localStorage.getItem("adminToken");
+    if (!token) {
+      setEditStudentError("Admin session expired. Please login again.");
+      return;
+    }
+
+    setIsSavingStudent(true);
+    setEditStudentError("");
+
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/students/${selectedStudent._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setEditStudentError(toUiMessage(data, "Unable to update student."));
+        return;
+      }
+
+      setSelectedStudent(data);
+      setEditableStudent({
+        name: String(data?.name || ""),
+        year: String(data?.year || "1st Year"),
+        department: String(data?.department || "Computer Science and Engineering"),
+        email: String(data?.email || ""),
+        phone: String(data?.phone || ""),
+        regNo: String(data?.regNo || ""),
+      });
+      setIsEditingStudent(false);
+      await fetchStudents();
+
+      setShowImportOverlay(true);
+      setImportOverlayType("success");
+      setImportOverlayText("Student updated successfully");
+      setTimeout(() => setShowImportOverlay(false), 1200);
+    } catch (error) {
+      console.log(error);
+      setEditStudentError("Server error. Try again.");
+    } finally {
+      setIsSavingStudent(false);
+    }
+  };
+
   const handleImportCSV = async (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
@@ -105,7 +247,7 @@ const Students = () => {
       setTimeout(() => setShowImportOverlay(false), 1200);
     } else {
       setImportOverlayType("error");
-      setImportOverlayText(data.message || "Import failed");
+      setImportOverlayText(toUiMessage(data, "Import failed"));
       setTimeout(() => setShowImportOverlay(false), 1500);
     }
 
@@ -119,6 +261,75 @@ const Students = () => {
     event.target.value = "";
   }
 };
+
+  const handleAddStudentChange = (event) => {
+    const { name, value } = event.target;
+    setNewStudent((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const resetAddStudentForm = () => {
+    setNewStudent({
+      name: "",
+      year: "1st Year",
+      department: "Computer Science and Engineering",
+      email: "",
+      phone: "",
+      regNo: "",
+    });
+    setAddStudentError("");
+  };
+
+  const handleAddStudent = async (event) => {
+    event.preventDefault();
+
+    const payload = {
+      ...newStudent,
+      name: String(newStudent.name || "").trim(),
+      year: String(newStudent.year || "").trim(),
+      department: String(newStudent.department || "").trim(),
+      email: String(newStudent.email || "").trim().toLowerCase(),
+      phone: String(newStudent.phone || "").trim(),
+      regNo: String(newStudent.regNo || "").trim(),
+    };
+
+    if (!payload.name || !payload.regNo) {
+      setAddStudentError("Name and Register No are required.");
+      return;
+    }
+
+    setIsAddingStudent(true);
+    setAddStudentError("");
+
+    try {
+      const res = await fetch("http://localhost:5000/api/students", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setAddStudentError(toUiMessage(data, "Unable to add student."));
+        return;
+      }
+
+      setShowAddStudentModal(false);
+      resetAddStudentForm();
+      setCurrentPage(1);
+      await fetchStudents();
+
+      setShowImportOverlay(true);
+      setImportOverlayType("success");
+      setImportOverlayText("Student added successfully");
+      setTimeout(() => setShowImportOverlay(false), 1200);
+    } catch (error) {
+      console.log(error);
+      setAddStudentError("Server error. Try again.");
+    } finally {
+      setIsAddingStudent(false);
+    }
+  };
 
   /* ================= FETCH STUDENTS ================= */
 
@@ -164,7 +375,7 @@ const Students = () => {
         );
         return true;
       } else {
-        console.log(data.message);
+        console.log(toUiMessage(data, "Failed to fetch students"));
         return false;
       }
     } catch (error) {
@@ -238,10 +449,10 @@ const Students = () => {
             }}
           >
             <option value="All">All Departments</option>
-            <option value="CSE">CSE</option>
-            <option value="IT">IT</option>
-            <option value="ECE">ECE</option>
-            <option value="EEE">EEE</option>
+            <option value="CSE">Computer Science and Engineering</option>
+            <option value="IT">Information Technology</option>
+            <option value="ECE">Electronics and Communication Engineering</option>
+            <option value="EEE">Electrical and Electronics Engineering</option>
           </select>
 
           <select
@@ -261,6 +472,17 @@ const Students = () => {
 
         {/* Actions */}
         <div className="students-actions">
+          <button
+            type="button"
+            className="students-action-btn"
+            onClick={() => {
+              resetAddStudentForm();
+              setShowAddStudentModal(true);
+            }}
+          >
+            Add Student
+          </button>
+
           <button
             type="button"
             className="students-action-btn"
@@ -305,7 +527,7 @@ const Students = () => {
                   <tr
                     key={student._id}
                     className="student-row"
-                    onClick={() => setSelectedStudent(student)}
+                    onClick={() => openStudentModal(student)}
                   >
                     <td>{cleanDisplayValue(student.name)}</td>
                     <td>{cleanDisplayValue(student.year)}</td>
@@ -359,7 +581,7 @@ const Students = () => {
         {selectedStudent && (
           <div
             className="student-modal-overlay"
-            onClick={() => setSelectedStudent(null)}
+            onClick={closeStudentModal}
           >
             <div
               className="student-modal"
@@ -367,16 +589,273 @@ const Students = () => {
             >
               <div className="modal-header">
                 <h2>{cleanDisplayValue(selectedStudent.name)}</h2>
-                <button onClick={() => setSelectedStudent(null)}>x</button>
+                <button onClick={closeStudentModal}>x</button>
               </div>
 
-              <div className="student-profile">
-                <p><strong>Register No:</strong> {formatRegNo(selectedStudent.regNo) || "N/A"}</p>
-                <p><strong>Year:</strong> {cleanDisplayValue(selectedStudent.year)}</p>
-                <p><strong>Department:</strong> {cleanDisplayValue(selectedStudent.department)}</p>
-                <p><strong>Email:</strong> {cleanDisplayValue(selectedStudent.email)}</p>
-                <p><strong>Phone:</strong> {cleanDisplayValue(selectedStudent.phone)}</p>
+              {!isEditingStudent ? (
+                <>
+                  <div className="student-profile">
+                    <p><strong>Register No:</strong> {formatRegNo(selectedStudent.regNo) || "N/A"}</p>
+                    <p><strong>Year:</strong> {cleanDisplayValue(selectedStudent.year)}</p>
+                    <p><strong>Department:</strong> {cleanDisplayValue(selectedStudent.department)}</p>
+                    <p><strong>Email:</strong> {cleanDisplayValue(selectedStudent.email)}</p>
+                    <p><strong>Phone:</strong> {cleanDisplayValue(selectedStudent.phone)}</p>
+                  </div>
+
+                  <div className="add-student-actions">
+                    <button
+                      type="button"
+                      className="students-action-btn"
+                      onClick={() => {
+                        setIsEditingStudent(true);
+                        setEditStudentError("");
+                      }}
+                    >
+                      Edit Student
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <form className="add-student-form" onSubmit={handleSaveStudent}>
+                  <label>
+                    Name
+                    <input
+                      type="text"
+                      name="name"
+                      value={editableStudent?.name || ""}
+                      onChange={handleEditStudentChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Register No
+                    <input
+                      type="text"
+                      name="regNo"
+                      value={editableStudent?.regNo || ""}
+                      onChange={handleEditStudentChange}
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    Year
+                    <select
+                      name="year"
+                      value={editableStudent?.year || "1st Year"}
+                      onChange={handleEditStudentChange}
+                    >
+                      <option value="1st Year">1st Year</option>
+                      <option value="2nd Year">2nd Year</option>
+                      <option value="3rd Year">3rd Year</option>
+                      <option value="4th Year">4th Year</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    Department
+                    <select
+                      name="department"
+                      value={editableStudent?.department || "Computer Science and Engineering"}
+                      onChange={handleEditStudentChange}
+                    >
+                      <option value="Computer Science and Engineering">Computer Science and Engineering</option>
+                      <option value="Information Technology">Information Technology</option>
+                      <option value="Electronics and Communication Engineering">Electronics and Communication Engineering</option>
+                      <option value="Electrical and Electronics Engineering">Electrical and Electronics Engineering</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    Email
+                    <input
+                      type="email"
+                      name="email"
+                      value={editableStudent?.email || ""}
+                      onChange={handleEditStudentChange}
+                    />
+                  </label>
+
+                  <label>
+                    Phone
+                    <input
+                      type="text"
+                      name="phone"
+                      value={editableStudent?.phone || ""}
+                      onChange={handleEditStudentChange}
+                    />
+                  </label>
+
+                  {editStudentError && (
+                    <p className="add-student-error">{editStudentError}</p>
+                  )}
+
+                  <div className="add-student-actions">
+                    <button
+                      type="button"
+                      className="students-action-btn secondary"
+                      onClick={() => {
+                        if (selectedStudent) {
+                          setEditableStudent({
+                            name: String(selectedStudent?.name || ""),
+                            year: String(selectedStudent?.year || "1st Year"),
+                            department: String(selectedStudent?.department || "Computer Science and Engineering"),
+                            email: String(selectedStudent?.email || ""),
+                            phone: String(selectedStudent?.phone || ""),
+                            regNo: String(selectedStudent?.regNo || ""),
+                          });
+                        }
+                        setIsEditingStudent(false);
+                        setEditStudentError("");
+                      }}
+                      disabled={isSavingStudent}
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      className="students-action-btn"
+                      disabled={isSavingStudent}
+                    >
+                      {isSavingStudent ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+        {showAddStudentModal && (
+          <div
+            className="student-modal-overlay"
+            onClick={() => {
+              if (!isAddingStudent) {
+                setShowAddStudentModal(false);
+                resetAddStudentForm();
+              }
+            }}
+          >
+            <div
+              className="student-modal add-student-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <h2>Add Student</h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isAddingStudent) {
+                      setShowAddStudentModal(false);
+                      resetAddStudentForm();
+                    }
+                  }}
+                >
+                  x
+                </button>
               </div>
+
+              <form className="add-student-form" onSubmit={handleAddStudent}>
+                <label>
+                  Name
+                  <input
+                    type="text"
+                    name="name"
+                    value={newStudent.name}
+                    onChange={handleAddStudentChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Register No
+                  <input
+                    type="text"
+                    name="regNo"
+                    value={newStudent.regNo}
+                    onChange={handleAddStudentChange}
+                    required
+                  />
+                </label>
+
+                <label>
+                  Year
+                  <select
+                    name="year"
+                    value={newStudent.year}
+                    onChange={handleAddStudentChange}
+                  >
+                    <option value="1st Year">1st Year</option>
+                    <option value="2nd Year">2nd Year</option>
+                    <option value="3rd Year">3rd Year</option>
+                    <option value="4th Year">4th Year</option>
+                  </select>
+                </label>
+
+                <label>
+                  Department
+                  <select
+                    name="department"
+                    value={newStudent.department}
+                    onChange={handleAddStudentChange}
+                  >
+                    <option value="Computer Science and Engineering">Computer Science and Engineering</option>
+                    <option value="Information Technology">Information Technology</option>
+                    <option value="Electronics and Communication Engineering">Electronics and Communication Engineering</option>
+                    <option value="Electrical and Electronics Engineering">Electrical and Electronics Engineering</option>
+                  </select>
+                </label>
+
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    name="email"
+                    value={newStudent.email}
+                    onChange={handleAddStudentChange}
+                  />
+                </label>
+
+                <label>
+                  Phone
+                  <input
+                    type="text"
+                    name="phone"
+                    value={newStudent.phone}
+                    onChange={handleAddStudentChange}
+                  />
+                </label>
+
+                {addStudentError && (
+                  <p className="add-student-error">{addStudentError}</p>
+                )}
+
+                <div className="add-student-actions">
+                  <button
+                    type="button"
+                    className="students-action-btn secondary"
+                    onClick={() => {
+                      if (!isAddingStudent) {
+                        setShowAddStudentModal(false);
+                        resetAddStudentForm();
+                      }
+                    }}
+                    disabled={isAddingStudent}
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="students-action-btn"
+                    disabled={isAddingStudent}
+                  >
+                    {isAddingStudent ? "Adding..." : "Save Student"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

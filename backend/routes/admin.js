@@ -75,7 +75,7 @@ router.post("/login", async (req, res) => {
               password: DEFAULT_ADMIN_PASSWORD,
             },
           },
-          { upsert: true, new: true }
+          { upsert: true, returnDocument: "after" }
         );
       }
     }

@@ -125,12 +125,36 @@ const canonicalRegNo = (value = "") =>
 /* ================= SAVE STUDENT ================= */
 router.post("/", async (req, res) => {
   try {
-    const student = new Student(req.body);
+    const regNo = normalizeRegisterNumber(req.body?.regNo);
+    if (!regNo) {
+      return res.status(400).json({ message: "Register number is required" });
+    }
+
+    const existingStudent = await Student.findOne({ regNo }).lean();
+    if (existingStudent) {
+      return res.status(409).json({
+        message: "Register number already exists. Please enter a unique register number.",
+      });
+    }
+
+    const password = String(req.body?.password || "").trim();
+
+    const student = new Student({
+      ...req.body,
+      regNo,
+      password,
+    });
     await student.save();
 
     res.status(201).json(student);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    if (err?.code === 11000 && err?.keyPattern?.regNo) {
+      return res.status(409).json({
+        message: "Register number already exists. Please enter a unique register number.",
+      });
+    }
+
+    res.status(500).json({ message: err.message || "Failed to add student" });
   }
 });
 
@@ -214,14 +238,43 @@ router.delete("/:id", verifyToken, async (req, res) => {
 /* ================= UPDATE STUDENT ================= */
 router.put("/:id", verifyToken, async (req, res) => {
   try {
-    const updatedStudent = await Student.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
+    const updates = { ...req.body };
+
+    if (typeof updates.regNo !== "undefined") {
+      const normalizedRegNo = normalizeRegisterNumber(updates.regNo);
+      if (!normalizedRegNo) {
+        return res.status(400).json({ message: "Register number is required" });
+      }
+
+      const duplicateRegNo = await Student.findOne({
+        _id: { $ne: req.params.id },
+        regNo: normalizedRegNo,
+      }).lean();
+
+      if (duplicateRegNo) {
+        return res.status(409).json({
+          message: "Register number already exists. Please enter a unique register number.",
+        });
+      }
+
+      updates.regNo = normalizedRegNo;
+    }
+
+    const updatedStudent = await Student.findByIdAndUpdate(req.params.id, updates, {
+      returnDocument: "after",
+    });
+
+    if (!updatedStudent) {
+      return res.status(404).json({ message: "Student not found" });
+    }
 
     res.json(updatedStudent);
   } catch (err) {
+    if (err?.code === 11000) {
+      return res.status(409).json({
+        message: "Register number already exists. Please enter a unique register number.",
+      });
+    }
     res.status(500).json({ error: err.message });
   }
 });
