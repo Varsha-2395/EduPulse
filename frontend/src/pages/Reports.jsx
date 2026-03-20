@@ -43,8 +43,6 @@ const Reports = () => {
     return value || "N/A";
   };
 
-  /* ================= FETCH REPORT DATA ================= */
-
   const fetchReports = async () => {
     try {
       const token = localStorage.getItem("adminToken");
@@ -114,8 +112,6 @@ const Reports = () => {
   useEffect(() => {
     fetchExportCount();
   }, [exportDepartment, exportYear]);
-
-  /* ================= CHART DATA ================= */
 
   const sentimentCountByLabel = sentimentStats.reduce((acc, item) => {
     const key = String(item?._id || "").trim();
@@ -193,8 +189,6 @@ const Reports = () => {
     },
   };
 
-  /* ================= EXPORT ================= */
-
   const handleExport = (type) => {
     const query = new URLSearchParams({
       department: exportDepartment,
@@ -233,11 +227,8 @@ const Reports = () => {
           </button>
         </div>
 
-        {/* ================= FILTERS ================= */}
-
         <div className="reports-toolbar">
           <div className="reports-filters">
-
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
@@ -288,11 +279,8 @@ const Reports = () => {
           Filtered for charts: {totalRecords}
         </span>
 
-        {/* ================= CHARTS ================= */}
-
         <div className="reports-visuals">
           <div className="report-visual-grid">
-
             <div className="report-chart-card">
               <h3>Feedback Sentiment</h3>
               <div className="report-chart-wrap">
@@ -314,11 +302,8 @@ const Reports = () => {
                 )}
               </div>
             </div>
-
           </div>
         </div>
-
-        {/* ================= EXPORT SECTION ================= */}
 
         <div className="export-controls">
           <h3>Download Reports</h3>

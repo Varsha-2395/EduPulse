@@ -30,6 +30,15 @@ ChartJS.register(
   Legend
 );
 
+const getHighlightYearClass = (value = "") => {
+  const normalized = String(value).toLowerCase();
+  if (normalized.includes("1st year")) return "year-1";
+  if (normalized.includes("2nd year")) return "year-2";
+  if (normalized.includes("3rd year")) return "year-3";
+  if (normalized.includes("4th year")) return "year-4";
+  return "year-default";
+};
+
 const AdminDashboard = () => {
   const [metrics, setMetrics] = useState({
     totalStudents: 0,
@@ -142,9 +151,11 @@ const AdminDashboard = () => {
 
         <div className="highlight-grid">
           {highlightsData.map((item) => (
-            <div key={item.id} className={`highlight-card ${item.type}`}>
+            <div
+              key={item.id}
+              className={`highlight-card ${getHighlightYearClass(item.class)}`}
+            >
               <p className="highlight-class">{item.class}</p>
-              <p className="highlight-title">{item.title}</p>
               <p className="highlight-text">{item.text}</p>
             </div>
           ))}

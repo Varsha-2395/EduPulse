@@ -23,7 +23,10 @@ const dashboardRoutes = require("./routes/dashboard");
 const speechRoutes = require("./routes/speech");
 const sentimentRoutes = require("./routes/sentiment");
 const summaryRoutes = require("./routes/summary");
-const { startMonthlyFeedbackReminderJob } = require("./controllers/monthlyFeedbackReminderJob");
+const {
+  startMonthlyFeedbackReminderJob,
+  scheduleTodayNoonTestReminder,
+} = require("./controllers/monthlyFeedbackReminderJob");
 
 // Middleware
 app.use(cors({
@@ -39,10 +42,10 @@ mongoose
   .then(() => {
     console.log("MongoDB Connected 😎🔥");
     startMonthlyFeedbackReminderJob();
+    scheduleTodayNoonTestReminder();
   })
   .catch((err) => console.log("MongoDB Error ❌", err));
 
-// ✅ FIXED ROUTE
 app.use("/api/students", studentRoutes);
 app.use("/api/feedback", feedbackRoutes); 
 app.use("/api/admin", adminRoutes);
@@ -52,11 +55,9 @@ app.use("/api", speechRoutes);
 app.use("/api", sentimentRoutes);
 app.use("/api", summaryRoutes);
 
-// Real-time transcription setup
 const { AssemblyAI } = require('assemblyai');
 const aai = new AssemblyAI({ apiKey: process.env.ASSEMBLYAI_API_KEY });
 
-// Process audio chunks using AssemblyAI Universal Streaming
 async function processAudioChunk(socket) {
     try {
         if (socket.audioChunks.length === 0) return;
@@ -64,8 +65,6 @@ async function processAudioChunk(socket) {
         // Combine recent audio chunks
         const audioBuffer = Buffer.concat(socket.audioChunks);
         socket.audioChunks = []; // Clear processed chunks
-        
-        console.log(`🎵 Processing audio chunk of ${audioBuffer.length} bytes`);
         
         // Convert raw PCM to WAV format
         const sampleRate = 16000; // 16kHz sample rate
@@ -76,8 +75,6 @@ async function processAudioChunk(socket) {
         const wavHeader = createWavHeader(audioBuffer.length, sampleRate, numChannels, bitsPerSample);
         const wavBuffer = Buffer.concat([wavHeader, audioBuffer]);
         
-        console.log(`📝 Created WAV buffer: ${wavBuffer.length} bytes (header: ${wavHeader.length}, audio: ${audioBuffer.length})`);
-        
         // Use AssemblyAI for transcription with streaming-like experience 
         const transcript = await aai.transcripts.transcribe({
             audio: wavBuffer,
@@ -85,12 +82,7 @@ async function processAudioChunk(socket) {
             speech_models: ['universal-2']
         });
         
-        console.log('📊 Transcription status:', transcript.status);
-        console.log('🎯 Transcription ID:', transcript.id);
-        
         if (transcript.status === 'completed' && transcript.text && transcript.text.length > 0) {
-            console.log('✅ Transcription successful:', transcript.text);
-            
             // Emit as partial transcript first for real-time feel
             socket.emit('partial-transcript', {
                 text: transcript.text,
@@ -103,7 +95,6 @@ async function processAudioChunk(socket) {
                     text: transcript.text,
                     confidence: transcript.confidence || 0.9
                 });
-                console.log('🎯 Emitted final transcript immediately (stopping)');
             } else {
                 // Then emit as final after short delay for ongoing sessions
                 setTimeout(() => {
@@ -112,15 +103,14 @@ async function processAudioChunk(socket) {
                             text: transcript.text,
                             confidence: transcript.confidence || 0.9
                         });
-                        console.log('🎯 Emitted final transcript after delay (ongoing)');
                     }
                 }, 1000);
             }
         } else if (transcript.status === 'error') {
-            console.error('❌ Transcription failed:', transcript.error);
+            //console.error('❌ Transcription failed:', transcript.error);
             socket.emit('transcription-error', { error: transcript.error });
         } else {
-            console.log('⚠️ No transcription text returned - status:', transcript.status);
+            //console.log('⚠️ No transcription text returned - status:', transcript.status);
             // Emit status to show the system is working
             socket.emit('partial-transcript', {
                 text: '(processing...)',
@@ -138,7 +128,6 @@ async function processAudioChunk(socket) {
     }
 }
 
-// Create WAV header for raw PCM data
 function createWavHeader(dataLength, sampleRate, numChannels, bitsPerSample) {
     const buffer = Buffer.alloc(44);
     
@@ -164,12 +153,11 @@ function createWavHeader(dataLength, sampleRate, numChannels, bitsPerSample) {
     return buffer;
 }
 
-// Socket.IO connection handling for real-time transcription
 io.on('connection', (socket) => {
-    console.log('Client connected for real-time transcription');
+    //console.log('Client connected for real-time transcription');
     
     socket.on('start-recording', async () => {
-        console.log('Starting real-time transcription with Universal Streaming...');
+        //console.log('Starting real-time transcription with Universal Streaming...');
         
         try {
             // Use AssemblyAI Universal Streaming model
@@ -177,12 +165,12 @@ io.on('connection', (socket) => {
             socket.transcriptionActive = true;
             
             // Start a transcription session using the new streaming API
-            console.log('Initialized Universal Streaming session');
+            //console.log('Initialized Universal Streaming session');
             socket.emit('recording-started');
             
             // Process audio chunks in batches for real-time-like experience
             socket.processingInterval = setInterval(async () => {
-                console.log(`⏰ Processing interval triggered. Chunks available: ${socket.audioChunks.length}`);
+                //console.log(`⏰ Processing interval triggered. Chunks available: ${socket.audioChunks.length}`);
                 if (socket.audioChunks.length > 0 && socket.transcriptionActive) {
                     await processAudioChunk(socket);
                 }
@@ -197,14 +185,12 @@ io.on('connection', (socket) => {
     });
 
     socket.on('audio-data', (data) => {
-        console.log(`🎵 Audio data event received. Data type: ${typeof data}, Array: ${Array.isArray(data)}, Length: ${data?.length || 0}`);
-        
         if (socket.transcriptionActive && socket.audioChunks) {
             try {
                 // Collect audio chunks for batch processing
                 const audioBuffer = Buffer.from(data);
                 socket.audioChunks.push(audioBuffer);
-                console.log(`✅ Audio chunk received: ${audioBuffer.length} bytes (total chunks: ${socket.audioChunks.length})`);
+                //console.log(`✅ Audio chunk received: ${audioBuffer.length} bytes (total chunks: ${socket.audioChunks.length})`);
                 
                 // Limit chunk buffer to prevent memory issues (keep last 10 chunks)
                 if (socket.audioChunks.length > 10) {
@@ -219,8 +205,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('stop-recording', async () => {
-        console.log('Stopping Universal Streaming transcription...');
-        
         if (socket.processingInterval) {
             clearInterval(socket.processingInterval);
             socket.processingInterval = null;
@@ -228,12 +212,10 @@ io.on('connection', (socket) => {
         
         // Process any remaining chunks before stopping
         if (socket.audioChunks && socket.audioChunks.length > 0) {
-            console.log(`📋 Processing ${socket.audioChunks.length} remaining chunks before stopping...`);
             try {
                 // Mark as stopping but keep active for processing
                 socket.transcriptionActive = false; // This signals processAudioChunk to emit final immediately
                 await processAudioChunk(socket);
-                console.log('✅ Final chunks processed successfully');
             } catch (error) {
                 console.error('❌ Error processing final chunks:', error.message);
             }
@@ -247,7 +229,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log('Client disconnected');
+        //console.log('Client disconnected');
         
         // Clean up Universal Streaming resources
         socket.transcriptionActive = false;
@@ -261,11 +243,9 @@ io.on('connection', (socket) => {
             socket.audioChunks = [];
         }
         
-        console.log('Cleaned up Universal Streaming resources on disconnect');
     });
 });
 
-// Server
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {

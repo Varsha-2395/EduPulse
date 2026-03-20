@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 const Admin = require("../models/Admin");
+const verifyToken = require("../middleware/auth");
+const { sendMonthlyFeedbackReminder } = require("../controllers/monthlyFeedbackReminderJob");
 
 console.log("Admin route loaded");
 
@@ -99,6 +101,28 @@ router.post("/login", async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/monthly-reminder/test", verifyToken, async (req, res) => {
+  try {
+    if (req.user?.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    const result = await sendMonthlyFeedbackReminder({ force: true });
+
+    if (!result) {
+      return res.status(500).json({ message: "Manual reminder trigger did not complete" });
+    }
+
+    return res.json({
+      message: "Monthly reminder test mail sent",
+      ...result,
+    });
+  } catch (error) {
+    console.log("Manual monthly reminder error:", error.message);
+    return res.status(500).json({ message: error.message || "Failed to send test reminder" });
   }
 });
 

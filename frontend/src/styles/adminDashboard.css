@@ -112,6 +112,7 @@
   padding: 16px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
   transition: 0.2s ease;
+  border-left: 4px solid #cbd5e1;
 }
 
 .highlight-card:hover {
@@ -136,16 +137,49 @@
   font-weight: 500;
 }
 
-.highlight-card.negative {
-  border-left: 4px solid #dc2626;
+.highlight-card.year-1 {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border-left-color: #2563eb;
 }
 
-.highlight-card.positive {
-  border-left: 4px solid #16a34a;
+.highlight-card.year-1 .highlight-class {
+  color: #1d4ed8;
 }
 
-.highlight-card.neutral {
-  border-left: 4px solid #facc15;
+.highlight-card.year-2 {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border-left-color: #059669;
+}
+
+.highlight-card.year-2 .highlight-class {
+  color: #047857;
+}
+
+.highlight-card.year-3 {
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  border-left-color: #ea580c;
+}
+
+.highlight-card.year-3 .highlight-class {
+  color: #c2410c;
+}
+
+.highlight-card.year-4 {
+  background: linear-gradient(135deg, #fdf4ff, #fae8ff);
+  border-left-color: #c026d3;
+}
+
+.highlight-card.year-4 .highlight-class {
+  color: #a21caf;
+}
+
+.highlight-card.year-default {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  border-left-color: #64748b;
+}
+
+.highlight-card.year-default .highlight-class {
+  color: #475569;
 }
 
 /* ================= Mobile ================= */

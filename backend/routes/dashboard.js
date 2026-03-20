@@ -4,17 +4,10 @@ const axios = require("axios");
 const Student = require("../models/Student");
 const Feedback = require("../models/Feedback");
 
-const getGeminiApiKey = () => String(process.env.GEMINI_API_KEY || "").trim();
-const getGeminiModel = () => String(process.env.GEMINI_MODEL || "").trim();
-const GEMINI_VERSIONS = ["v1", "v1beta"];
-const GEMINI_MODEL_CANDIDATES = [
-  "gemini-2.0-flash",
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-pro-latest",
-  "gemini-1.5-flash",
-];
-let geminiQuotaBlockedUntil = 0;
-let geminiLastQuotaLogAt = 0;
+const getHfApiKey = () => String(process.env.HF_API_KEY || "").trim();
+const HF_SUMMARY_MODEL =
+  "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn";
+let hfSummaryBlockedUntil = 0;
 const classKey = (year = "", department = "") =>
   `${String(year).trim().toLowerCase()}||${String(department).trim().toLowerCase()}`;
 
@@ -69,83 +62,49 @@ const buildSummaryInput = (comments = []) => {
 
 const summarizeText = async (text) => {
   if (!text) return "No feedback available";
-  if (Date.now() < geminiQuotaBlockedUntil) return "";
+  if (Date.now() < hfSummaryBlockedUntil) return "";
+  const hfApiKey = getHfApiKey();
+  if (!hfApiKey) return "";
 
-  const geminiApiKey = getGeminiApiKey();
-  if (!geminiApiKey) return "";
-
-  const preferredModel = getGeminiModel();
-  const modelsToTry = [
-    ...(preferredModel ? [preferredModel] : []),
-    ...GEMINI_MODEL_CANDIDATES,
-  ].filter((m, i, arr) => m && arr.indexOf(m) === i);
-
-  for (const version of GEMINI_VERSIONS) {
-    for (const model of modelsToTry) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${geminiApiKey}`;
-        const response = await axios.post(
-          url,
-          {
-            contents: [
-              {
-                role: "user",
-                parts: [
-                  {
-                    text: `Summarize this class feedback in exactly one concise sentence:\n${text}`,
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              temperature: 0.2,
-              maxOutputTokens: 80,
-            },
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-            timeout: 20000,
-          }
-        );
-
-        const raw = (response?.data?.candidates || [])
-          .flatMap((c) => c?.content?.parts || [])
-          .map((p) => p?.text || "")
-          .join(" ")
-          .trim();
-        const concise = toConciseSentence(raw);
-        if (concise) return concise;
-      } catch (error) {
-        const message = error.response?.data?.error?.message || error.message;
-        const lowerMessage = String(message).toLowerCase();
-        const quotaExceeded =
-          lowerMessage.includes("quota") ||
-          lowerMessage.includes("rate limit") ||
-          lowerMessage.includes("resource exhausted");
-        if (quotaExceeded) {
-          const retryMatch = String(message).match(/retry in\s+([\d.]+)s/i);
-          const retryMs = retryMatch
-            ? Math.ceil(Number(retryMatch[1]) * 1000)
-            : 60 * 1000;
-          geminiQuotaBlockedUntil = Date.now() + retryMs;
-          if (Date.now() - geminiLastQuotaLogAt > 5000) {
-            console.log(`Dashboard Gemini summary API quota exceeded. Pausing requests for ${Math.ceil(retryMs / 1000)}s.`);
-            geminiLastQuotaLogAt = Date.now();
-          }
-          return "";
-        }
-        const isModelNotFound = String(message).toLowerCase().includes("not found");
-        if (!isModelNotFound) {
-          console.log("Dashboard Gemini summary API error:", message);
-          return "";
-        }
+  try {
+    const response = await axios.post(
+      HF_SUMMARY_MODEL,
+      {
+        inputs: `Summarize this class feedback in one concise sentence: ${text}`,
+        parameters: {
+          max_length: 80,
+          min_length: 12,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${hfApiKey}`,
+        },
+        timeout: 6000,
       }
+    );
+
+    const payload = response?.data;
+    const raw = Array.isArray(payload)
+      ? payload[0]?.summary_text || payload[0]?.generated_text || ""
+      : payload?.summary_text || payload?.generated_text || "";
+    const concise = toConciseSentence(raw);
+    if (concise) return concise;
+  } catch (error) {
+    const message = error.response?.data || error.message;
+    const lowerMessage = String(error.message || "").toLowerCase();
+    if (
+      lowerMessage.includes("timeout") ||
+      lowerMessage.includes("socket hang up") ||
+      lowerMessage.includes("etimedout")
+    ) {
+      hfSummaryBlockedUntil = Date.now() + 5 * 60 * 1000;
+      return "";
     }
+
+    console.log("Dashboard Hugging Face summary API error:", message);
   }
 
-  console.log("Dashboard Gemini summary API error: No compatible Gemini model found");
   return "";
 };
 

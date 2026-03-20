@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
-const { getFeedbackSummary } = require("../controllers/summaryController");
+const { getSummary } = require("../controllers/summaryController");
 
-router.get("/feedback-summary", getFeedbackSummary);
+router.get("/summary", getSummary);
 
 module.exports = router;
