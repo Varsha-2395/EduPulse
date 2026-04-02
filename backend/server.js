@@ -42,7 +42,6 @@ mongoose
   .then(() => {
     console.log("MongoDB Connected 😎🔥");
     startMonthlyFeedbackReminderJob();
-    scheduleTodayNoonTestReminder();
   })
   .catch((err) => console.log("MongoDB Error ❌", err));
 

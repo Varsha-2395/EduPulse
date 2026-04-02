@@ -5,14 +5,21 @@ const Student = require("../models/Student");
 const MonthlyReminderLog = require("../models/MonthlyReminderLog");
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000;
+const TEST_REMINDER_AT = new Date("2026-04-02T15:13:00+05:30");
+const TEST_REMINDER_LOG_KEY = "2026-04-02-1513-manual-test";
 const TEST_STUDENT_NAMES = ["varsha v s", "sharam riya a", "thibisha", "varun","barath r p"];
 
 let timer = null;
 let isRunning = false;
+let testTimer = null;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const isFirstDayOfMonth = (date = new Date()) => date.getDate() === 1;
+const isLastDayOfMonth = (date = new Date()) => {
+  const tomorrow = new Date(date);
+  tomorrow.setDate(date.getDate() + 1);
+  return tomorrow.getMonth() !== date.getMonth();
+};
 
 const monthKeyFromDate = (date = new Date()) => {
   const year = date.getFullYear();
@@ -46,7 +53,7 @@ const createTransporter = () => {
 
 const sendMonthlyFeedbackReminder = async ({ force = false, customLogKey = null } = {}) => {
   const now = new Date();
-  if (!force && !isFirstDayOfMonth(now)) return;
+  if (!force && !isLastDayOfMonth(now)) return;
 
   const monthKey = monthKeyFromDate(now);
   const logKey = customLogKey || (force ? `${monthKey}-manual-${now.getTime()}` : monthKey);
@@ -69,13 +76,12 @@ const sendMonthlyFeedbackReminder = async ({ force = false, customLogKey = null 
     String(process.env.FEEDBACK_FORM_URL || "").trim() || "http://localhost:5173/feedback";
   const senderEmail = String(process.env.MAIL_USER || "").trim();
   const students = await Student.find().select("name email emailId mail").lean();
-  const testStudents = students.filter((student) =>
+  const filteredStudents = students.filter((student) =>
     TEST_STUDENT_NAMES.includes(normalizeName(student.name))
   );
-  const targetStudents = force ? testStudents : students;
 
   const recipients = [
-    ...new Set(targetStudents.map(normalizeEmail).filter((email) => isValidEmail(email))),
+    ...new Set(filteredStudents.map(normalizeEmail).filter((email) => isValidEmail(email))),
   ];
 
   if (!recipients.length) {
@@ -86,9 +92,7 @@ const sendMonthlyFeedbackReminder = async ({ force = false, customLogKey = null 
       note: force ? "Manual test skipped: no valid student emails found" : "No valid student emails found",
     });
     console.log(
-      force
-        ? `Monthly reminder skipped for ${monthKey} (manual test): no recipients for ${TEST_STUDENT_NAMES.join(", ")}`
-        : `Monthly reminder skipped for ${monthKey}: no valid student emails found`
+      `Monthly reminder skipped for ${force ? `${monthKey} (manual test)` : monthKey}: no recipients for ${TEST_STUDENT_NAMES.join(", ")}`
     );
     return {
       monthKey,
@@ -100,9 +104,7 @@ const sendMonthlyFeedbackReminder = async ({ force = false, customLogKey = null 
   }
 
   console.log(
-    force
-      ? `Monthly reminder test recipients: ${testStudents.map((student) => student.name).join(", ")}`
-      : `Monthly reminder recipients found: ${recipients.length}`
+    `Monthly reminder test recipients: ${filteredStudents.map((student) => student.name).join(", ")}`
   );
 
   const logoPath = path.resolve(__dirname, "../../frontend/public/edupulse-logo.png");
@@ -237,7 +239,45 @@ const startMonthlyFeedbackReminderJob = () => {
   timer = setInterval(runJob, CHECK_INTERVAL_MS);
 };
 
+const scheduleTodayNoonTestReminder = () => {
+  if (testTimer) return;
+
+  const delay = TEST_REMINDER_AT.getTime() - Date.now();
+  if (delay <= 0) {
+    console.log(`Timed test reminder target ${TEST_REMINDER_AT.toString()} already passed. Triggering immediately.`);
+    testTimer = setTimeout(async () => {
+      try {
+        await sendMonthlyFeedbackReminder({
+          force: true,
+          customLogKey: TEST_REMINDER_LOG_KEY,
+        });
+      } catch (error) {
+        console.log("Timed test reminder error:", error.message);
+      } finally {
+        testTimer = null;
+      }
+    }, 1000);
+    return;
+  }
+
+  testTimer = setTimeout(async () => {
+    try {
+      await sendMonthlyFeedbackReminder({
+        force: true,
+        customLogKey: TEST_REMINDER_LOG_KEY,
+      });
+    } catch (error) {
+      console.log("Timed test reminder error:", error.message);
+    } finally {
+      testTimer = null;
+    }
+  }, delay);
+
+  console.log(`Timed test reminder scheduled for ${TEST_REMINDER_AT.toString()}`);
+};
+
 module.exports = {
   startMonthlyFeedbackReminderJob,
   sendMonthlyFeedbackReminder,
+  scheduleTodayNoonTestReminder,
 };
