@@ -5,8 +5,8 @@ const Student = require("../models/Student");
 const MonthlyReminderLog = require("../models/MonthlyReminderLog");
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000;
-const TEST_REMINDER_AT = new Date("2026-03-20T14:00:00+05:30");
-const TEST_REMINDER_LOG_KEY = "2026-03-20-1400-manual-test";
+const TEST_REMINDER_AT = new Date("2026-04-02T15:13:00+05:30");
+const TEST_REMINDER_LOG_KEY = "2026-04-02-1513-manual-test";
 const TEST_STUDENT_NAMES = ["varsha v s", "sharam riya a", "thibisha", "varun","barath r p"];
 
 let timer = null;
