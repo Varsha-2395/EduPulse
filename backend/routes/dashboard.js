@@ -116,14 +116,34 @@ router.get("/", async (req, res) => {
       negative: "Frequent Complaint",
     };
 
-    /* ===== TOTAL COUNTS ===== */
-    const totalStudents = await Student.countDocuments();
-    const totalFeedback = await Feedback.countDocuments();
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const monthlyFilter = {
+      createdAt: {
+        $gte: startOfMonth,
+        $lt: startOfNextMonth,
+      },
+    };
 
-    const positiveCount = await Feedback.countDocuments({ sentiment: "Positive" });
-    const neutralCount = await Feedback.countDocuments({ sentiment: "Neutral" });
-    const negativeCount = await Feedback.countDocuments({ sentiment: "Negative" });
+    /* ===== CURRENT MONTH COUNTS ===== */
+    const totalStudents = await Student.countDocuments();
+    const totalFeedback = await Feedback.countDocuments(monthlyFilter);
+
+    const positiveCount = await Feedback.countDocuments({
+      ...monthlyFilter,
+      sentiment: "Positive",
+    });
+    const neutralCount = await Feedback.countDocuments({
+      ...monthlyFilter,
+      sentiment: "Neutral",
+    });
+    const negativeCount = await Feedback.countDocuments({
+      ...monthlyFilter,
+      sentiment: "Negative",
+    });
     const submittedRegNoDocs = await Feedback.distinct("regNo", {
+      ...monthlyFilter,
       regNo: { $exists: true, $ne: "" },
     });
     const submittedCount = submittedRegNoDocs.length;
@@ -265,13 +285,17 @@ router.get("/", async (req, res) => {
 
     res.json({
       metrics: {
-        totalStudents,
+        totalStudents: submittedCount,
         totalFeedback,
         positive: positiveCount,
         neutral: neutralCount,
         negative: negativeCount,
         notSubmitted,
       },
+      monthLabel: now.toLocaleString("en-US", {
+        month: "long",
+        year: "numeric",
+      }),
       monthlyTrend: formattedTrend,
       highlights,
     });

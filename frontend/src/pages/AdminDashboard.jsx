@@ -1,22 +1,22 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Line } from "react-chartjs-2";
 import {
-  CategoryScale,
-  Chart as ChartJS,
-  Legend,
-  LineElement,
-  LinearScale,
-  PointElement,
-  Tooltip,
+    CategoryScale,
+    Chart as ChartJS,
+    Legend,
+    LineElement,
+    LinearScale,
+    PointElement,
+    Tooltip,
 } from "chart.js";
 import {
-  Users,
-  MessageSquare,
-  ThumbsUp,
-  ThumbsDown,
-  Minus,
-  AlertCircle,
+    AlertCircle,
+    MessageSquare,
+    Minus,
+    ThumbsDown,
+    ThumbsUp,
+    Users,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Line } from "react-chartjs-2";
 
 import AdminLayout from "../components/AdminLayout";
 import "../styles/adminDashboard.css";
@@ -39,6 +39,14 @@ const getHighlightYearClass = (value = "") => {
   return "year-default";
 };
 
+const formatClassSummaryTitle = (item = {}) => {
+  const year = String(item?.year || "").trim();
+  const department = String(item?.department || "").trim();
+
+  if (year && department) return `${year} - ${department}`;
+  return String(item?.group || department || year || "Class Summary");
+};
+
 const AdminDashboard = () => {
   const [metrics, setMetrics] = useState({
     totalStudents: 0,
@@ -49,7 +57,9 @@ const AdminDashboard = () => {
     notSubmitted: 0,
   });
   const [monthlyTrendData, setMonthlyTrendData] = useState([]);
-  const [highlightsData, setHighlightsData] = useState([]);
+  const [summaries, setSummaries] = useState([]);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -74,7 +84,6 @@ const AdminDashboard = () => {
           notSubmitted: data?.metrics?.notSubmitted || 0,
         });
         setMonthlyTrendData(Array.isArray(data?.monthlyTrend) ? data.monthlyTrend : []);
-        setHighlightsData(Array.isArray(data?.highlights) ? data.highlights : []);
       } catch (err) {
         setError(err.message || "Unable to load dashboard");
       } finally {
@@ -82,7 +91,27 @@ const AdminDashboard = () => {
       }
     };
 
+    const fetchSummaryOnLoad = async () => {
+      try {
+        setSummaryLoading(true);
+        setSummaryError("");
+        const res = await fetch("http://localhost:5000/api/summary");
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.message || "Failed to generate summary");
+        }
+
+        setSummaries(Array.isArray(data?.summaries) ? data.summaries : []);
+      } catch (err) {
+        setSummaryError(err.message || "Unable to generate summary");
+      } finally {
+        setSummaryLoading(false);
+      }
+    };
+
     fetchDashboard();
+    fetchSummaryOnLoad();
   }, []);
 
   const trendData = useMemo(() => ({
@@ -147,19 +176,23 @@ const AdminDashboard = () => {
       </div>
 
       <div className="highlights-section">
-        <h3>Class-wise Feedback Highlights</h3>
+        <h3>Class-wise Feedback Summary</h3>
 
         <div className="highlight-grid">
-          {highlightsData.map((item) => (
+          {summaries.map((item, index) => (
             <div
-              key={item.id}
-              className={`highlight-card ${getHighlightYearClass(item.class)}`}
+              key={`${item.group}-${index}`}
+              className={`highlight-card ${getHighlightYearClass(item.group)}`}
             >
-              <p className="highlight-class">{item.class}</p>
-              <p className="highlight-text">{item.text}</p>
+              <p className="highlight-class">{formatClassSummaryTitle(item)}</p>
+              <p className="highlight-text">{item.summary}</p>
             </div>
           ))}
-          {!highlightsData.length && !loading && <p>No highlights available.</p>}
+          {summaryLoading && <p>Loading class-wise summary...</p>}
+          {!summaryLoading && summaryError && <p className="summary-error">{summaryError}</p>}
+          {!summaryLoading && !summaryError && summaries.length === 0 && !loading && (
+            <p>No class-wise summary available.</p>
+          )}
         </div>
       </div>
     </AdminLayout>
